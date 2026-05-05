@@ -1,3 +1,6 @@
+const { createHero } = require("./hero.js");
+const { createCommanderRoster } = require("./commanders.js");
+
 const SESSION_STATUS = Object.freeze({
   RUNNING: "running",
   PAUSED: "paused",
@@ -18,17 +21,9 @@ const DEFAULT_STATE = Object.freeze({
     index: 1,
   },
   roster: {
-    hero: {
-      id: "hero",
-      level: 1,
-      stats: {
-        attack: 10,
-        defense: 6,
-        health: 100,
-      },
-      visualProgression: 0,
-    },
+    hero: createHero(),
     commanders: [],
+    activeCommanderIds: [],
     armyUnits: [],
   },
   formation: {
@@ -52,6 +47,28 @@ function clone(value) {
 
 function normalizeInitialState(initialState = {}) {
   const state = clone(DEFAULT_STATE);
+  const initialHero = clone(initialState.roster?.hero ?? {});
+  const heroLevel =
+    initialHero.level ??
+    (initialHero.experience === undefined ? state.roster.hero.level : undefined);
+  const heroStats = initialHero.stats
+    ? {
+        ...state.roster.hero.stats,
+        ...initialHero.stats,
+      }
+    : undefined;
+  const hero = createHero({
+    ...state.roster.hero,
+    ...initialHero,
+    level: heroLevel,
+    stats: heroStats,
+  });
+  const commanderRoster = createCommanderRoster({
+    commanders: clone(initialState.roster?.commanders ?? state.roster.commanders),
+    activeCommanderIds: clone(
+      initialState.roster?.activeCommanderIds ?? state.roster.activeCommanderIds,
+    ),
+  });
 
   return {
     ...state,
@@ -67,14 +84,9 @@ function normalizeInitialState(initialState = {}) {
     roster: {
       ...state.roster,
       ...clone(initialState.roster ?? {}),
-      hero: {
-        ...state.roster.hero,
-        ...clone(initialState.roster?.hero ?? {}),
-        stats: {
-          ...state.roster.hero.stats,
-          ...clone(initialState.roster?.hero?.stats ?? {}),
-        },
-      },
+      hero,
+      commanders: commanderRoster.commanders,
+      activeCommanderIds: commanderRoster.activeCommanderIds,
     },
     formation: {
       ...state.formation,
@@ -87,6 +99,10 @@ function normalizeInitialState(initialState = {}) {
     visualProgression: {
       ...state.visualProgression,
       ...clone(initialState.visualProgression ?? {}),
+      hero:
+        initialState.visualProgression?.hero ??
+        initialState.roster?.hero?.visualProgression ??
+        hero.visualProgression,
       commanders: {
         ...state.visualProgression.commanders,
         ...clone(initialState.visualProgression?.commanders ?? {}),

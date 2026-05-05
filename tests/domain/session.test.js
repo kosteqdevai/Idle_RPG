@@ -19,9 +19,11 @@ describe("core game session state", () => {
     expect(state.roster.hero).toMatchObject({
       id: "hero",
       level: 1,
+      power: 52.2,
       visualProgression: 0,
     });
     expect(state.roster.commanders).toEqual([]);
+    expect(state.roster.activeCommanderIds).toEqual([]);
     expect(state.roster.armyUnits).toEqual([]);
     expect(state.formation.slots).toEqual([]);
     expect(state.resources).toEqual({
@@ -92,6 +94,11 @@ describe("core game session state", () => {
       visualProgression: {
         hero: 0.35,
       },
+      roster: {
+        hero: {
+          experience: 100,
+        },
+      },
     });
 
     expect(session.snapshot()).toMatchObject({
@@ -106,6 +113,12 @@ describe("core game session state", () => {
         hero: 0.35,
         commanders: {},
         armyUnits: {},
+      },
+      roster: {
+        hero: {
+          level: 2,
+          experience: 100,
+        },
       },
     });
   });

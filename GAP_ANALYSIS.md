@@ -8,7 +8,7 @@ do_not: do not create Phaser scenes, UI components, localStorage persistence, or
 
 ## GAP-002 — Hero entity and growth model
 phase: 1
-status: open
+status: closed
 blocked_by: GAP-001
 closes_when: Jest tests prove the hero has stats, level progression, autonomous combat attributes, power calculation, and a continuous visual progression value derived from power rather than fixed sprite tiers.
 escalate_if: hero growth needs final economy tuning values that cannot be safely represented as configurable constants.
@@ -16,7 +16,7 @@ do_not: do not render the hero, choose final art, or hardcode visual sprite thre
 
 ## GAP-003 — Commander roster and summoning model
 phase: 1
-status: open
+status: closed
 blocked_by: GAP-001
 closes_when: Jest tests prove commanders are permanent once summoned, the roster caps at 10 total, deployment caps at 4 active slots, summoning consumes Essence only, and commander visual progression values remain data-driven.
 escalate_if: commander uniqueness, archetypes, or visual distinction are needed before the roster and summoning rules can be tested.
