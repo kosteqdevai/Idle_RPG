@@ -1,6 +1,6 @@
 ## GAP-001 — Core game session state
 phase: 1
-status: open
+status: closed
 blocked_by: none
 closes_when: Jest tests prove a pure domain session can initialize a new game, advance deterministic ticks, pause/resume autonomous progress, and expose current realm, zone, roster, formation, resources, and visual progression state without importing Phaser or browser APIs.
 escalate_if: the session loop requires rendering, real time, or browser storage to define its behavior.
@@ -77,6 +77,14 @@ blocked_by: GAP-001, GAP-002, GAP-003, GAP-004, GAP-005, GAP-006, GAP-008, GAP-0
 closes_when: Jest tests prove save/load serializes and restores full game state, including roster, formation, zone progress, resources, offline timestamps, and visual progression values through a storage adapter interface that can swap localStorage for future mobile storage.
 escalate_if: persistence requires binding domain logic directly to browser localStorage or Phaser APIs.
 do_not: do not implement mobile AsyncStorage, cloud saves, or UI load screens in this gap.
+
+## GAP-010b — MVP vertical slice (browser playable)
+phase: 1
+status: open
+blocked_by: GAP-007, GAP-008, GAP-009, GAP-010
+closes_when: A single HTML file loads in the browser showing: hero stats, one active zone with autonomous combat resolving in real time, resource counters updating after combat, one army unit visible in formation, and visual progression value displayed as a number or bar — all wired to domain state with no placeholder data.
+escalate_if: rendering one combat loop requires changing closed domain architecture from GAP-001 through GAP-010.
+do_not: do not build full scene routing, commander UI, zone map, offline return screen, or any Phase 2 components — this is a single throwaway HTML file to validate the domain feels right before Phase 2 begins.
 
 ## GAP-011 — Phaser scene state routing
 phase: 2
