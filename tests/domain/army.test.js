@@ -11,6 +11,8 @@ const {
   calculateArmyUnitPower,
   calculateArmyUnitVisualProgression,
   deleteArmyUnit,
+  getArmyUnitUpgradeCost,
+  upgradeArmyUnit,
   getArmyUnitExperienceForLevel,
   getArmyUnitLevelForExperience,
 } = require("../../domain/army.js");
@@ -122,6 +124,29 @@ describe("army unit roster and squad composition", () => {
       calculateArmyUnitVisualProgression("infantry", 79),
     );
     expect(calculateArmyUnitVisualProgression("infantry", 80)).toBeLessThan(1);
+  });
+
+  test("upgrades army units with Gold and exposes improved visual progression", () => {
+    const roster = createStartingArmyRoster();
+    const infantry = roster.armyUnits.find((unit) => unit.id === "infantry");
+
+    expect(getArmyUnitUpgradeCost(infantry)).toBe(30);
+
+    const result = upgradeArmyUnit(roster, { gold: 40 }, "infantry");
+
+    expect(result.resources).toEqual({
+      gold: 10,
+      essence: 0,
+      realmShards: 0,
+    });
+    expect(result.upgradedUnit.level).toBe(2);
+    expect(result.upgradedUnit.power).toBeGreaterThan(infantry.power);
+    expect(result.upgradedUnit.visualProgression).toBeGreaterThan(
+      infantry.visualProgression,
+    );
+    expect(() =>
+      upgradeArmyUnit(roster, { gold: 29 }, "infantry"),
+    ).toThrow(/Gold/);
   });
 
   test("validates roster, composition, and active formation references", () => {

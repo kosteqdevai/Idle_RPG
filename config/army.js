@@ -61,6 +61,12 @@ const ARMY_EXPERIENCE = Object.freeze({
   growthFactor: 1.25,
 });
 
+const ARMY_UPGRADE = Object.freeze({
+  goldBaseCost: 30,
+  goldGrowthFactor: 1.45,
+  experiencePerUpgrade: 45,
+});
+
 const ARMY_VISUAL_PROGRESSION = Object.freeze({
   baselinePowerByArchetype: Object.freeze({
     infantry: 26.7,
@@ -77,5 +83,6 @@ module.exports = {
   ARMY_UNIT_STAT_GROWTH,
   ARMY_POWER_WEIGHTS,
   ARMY_EXPERIENCE,
+  ARMY_UPGRADE,
   ARMY_VISUAL_PROGRESSION,
 };

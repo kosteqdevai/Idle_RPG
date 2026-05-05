@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Idle RPG MVP Slice</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background: #151714;
+        color: #f3efe3;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, rgba(29, 43, 31, 0.96), rgba(18, 20, 18, 0.98)),
+          #151714;
+      }
+
+      main {
+        width: min(1120px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 24px 0;
+      }
+
+      header,
+      section {
+        border-bottom: 1px solid rgba(243, 239, 227, 0.16);
+        padding: 16px 0;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        font-weight: 750;
+      }
+
+      h2 {
+        margin-bottom: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #d7c992;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .panel {
+        min-height: 86px;
+        border: 1px solid rgba(243, 239, 227, 0.14);
+        border-radius: 8px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .label {
+        display: block;
+        margin-bottom: 6px;
+        color: #bdb6a2;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .value {
+        font-size: 22px;
+        font-weight: 720;
+      }
+
+      .battlefield {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .unit {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 44px;
+        margin-top: 8px;
+        border: 1px solid rgba(243, 239, 227, 0.12);
+        border-radius: 6px;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.16);
+      }
+
+      progress {
+        width: 100%;
+        height: 14px;
+        accent-color: #d4b650;
+      }
+
+      @media (max-width: 760px) {
+        .grid,
+        .battlefield {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Idle RPG MVP Slice</h1>
+        <p id="combat-status">Combat initializing</p>
+      </header>
+
+      <section>
+        <h2>Hero</h2>
+        <div class="grid">
+          <div class="panel">
+            <span class="label">Level</span>
+            <span class="value" id="hero-level"></span>
+          </div>
+          <div class="panel">
+            <span class="label">Attack</span>
+            <span class="value" id="hero-attack"></span>
+          </div>
+          <div class="panel">
+            <span class="label">Power</span>
+            <span class="value" id="hero-power"></span>
+          </div>
+          <div class="panel">
+            <span class="label">Visual Progression</span>
+            <progress id="visual-progress" max="1" value="0"></progress>
+            <span id="visual-progress-label"></span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Zone And Resources</h2>
+        <div class="grid">
+          <div class="panel">
+            <span class="label">Realm</span>
+            <span class="value" id="realm-name"></span>
+          </div>
+          <div class="panel">
+            <span class="label">Zone</span>
+            <span class="value" id="zone-name"></span>
+          </div>
+          <div class="panel">
+            <span class="label">Gold</span>
+            <span class="value" id="gold"></span>
+          </div>
+          <div class="panel">
+            <span class="label">Essence</span>
+            <span class="value" id="essence"></span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Autonomous Combat</h2>
+        <div class="battlefield">
+          <div class="panel">
+            <span class="label">Formation</span>
+            <div id="formation-list"></div>
+          </div>
+          <div class="panel">
+            <span class="label">Enemy</span>
+            <div class="unit">
+              <strong id="enemy-name"></strong>
+              <span id="enemy-health"></span>
+            </div>
+            <progress id="enemy-health-bar" max="1" value="1"></progress>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const state = {
+        hero: {
+          level: 4,
+          stats: { attack: 19, defense: 12, health: 154 },
+          power: 93.72,
+          visualProgression: 0.047,
+        },
+        realm: { id: "verdant-kingdom", name: "Verdant Kingdom" },
+        zone: {
+          id: "verdant-kingdom-1",
+          name: "Greenwatch Fields",
+          enemyPower: 45,
+        },
+        resources: { gold: 0, essence: 0, realmShards: 0 },
+        formation: [
+          {
+            id: "infantry",
+            name: "Infantry Squad",
+            slot: "front-center",
+            attack: 24,
+          },
+          { id: "archer", name: "Archer Squad", slot: "back-left", attack: 38.64 },
+          { id: "cavalry", name: "Cavalry Squad", slot: "front-right", attack: 16.56 },
+        ],
+      };
+
+      const combat = {
+        enemyHealth: state.zone.enemyPower * 4,
+        maxEnemyHealth: state.zone.enemyPower * 4,
+        round: 0,
+      };
+
+      function render() {
+        document.querySelector("#hero-level").textContent = state.hero.level;
+        document.querySelector("#hero-attack").textContent = state.hero.stats.attack;
+        document.querySelector("#hero-power").textContent =
+          state.hero.power.toFixed(2);
+        document.querySelector("#visual-progress").value =
+          state.hero.visualProgression;
+        document.querySelector("#visual-progress-label").textContent =
+          `${Math.round(state.hero.visualProgression * 100)}%`;
+        document.querySelector("#realm-name").textContent = state.realm.name;
+        document.querySelector("#zone-name").textContent = state.zone.name;
+        document.querySelector("#gold").textContent = state.resources.gold;
+        document.querySelector("#essence").textContent = state.resources.essence;
+        document.querySelector("#enemy-name").textContent = "Marauder Line";
+        document.querySelector("#enemy-health").textContent =
+          `${Math.max(0, Math.ceil(combat.enemyHealth))}/${combat.maxEnemyHealth}`;
+        document.querySelector("#enemy-health-bar").value =
+          Math.max(0, combat.enemyHealth / combat.maxEnemyHealth);
+        document.querySelector("#formation-list").replaceChildren(
+          ...state.formation.map((unit) => {
+            const row = document.createElement("div");
+            row.className = "unit";
+            row.innerHTML = `<strong>${unit.name}</strong><span>${unit.slot}</span>`;
+            return row;
+          }),
+        );
+      }
+
+      function resolveRound() {
+        combat.round += 1;
+        const armyDamage = state.formation.reduce(
+          (total, unit) => total + unit.attack,
+          0,
+        );
+        combat.enemyHealth -= state.hero.stats.attack + armyDamage;
+
+        if (combat.enemyHealth <= 0) {
+          state.resources.gold += Math.round(state.zone.enemyPower * 0.55);
+          state.resources.essence += combat.round % 3 === 0 ? 1 : 0;
+          state.hero.visualProgression = Math.min(
+            1,
+            state.hero.visualProgression + 0.015,
+          );
+          combat.enemyHealth = combat.maxEnemyHealth;
+          document.querySelector("#combat-status").textContent =
+            `Zone cleared. Combat resumed automatically. Round ${combat.round}.`;
+        } else {
+          document.querySelector("#combat-status").textContent =
+            `Autonomous combat running. Round ${combat.round}.`;
+        }
+
+        render();
+      }
+
+      render();
+      window.setInterval(resolveRound, 1000);
+    </script>
+  </body>
+</html>

@@ -13,7 +13,8 @@ TEMPLATE_TYPE: game-engine
    b. Generate the full `GAP_ANALYSIS.md` using the schema defined in this file.
    c. Generate a phased plan: Phase 1 = domain/core logic, Phase 2 = UI/scenes, Phase 3 = polish/release.
    d. Populate `DECISIONS.md` with any open decisions you detected from the description.
-   e. Do NOT write any source code yet. Stop after bootstrap and report what you generated.
+   e. Create `IMPLEMENTATIONS.md` as an empty file with only the header (see IMPLEMENTATIONS.md schema below).
+   f. Do NOT write any source code yet. Stop after bootstrap and report what you generated.
 3. If gaps exist, skip to Step 1.
 
 ### Gap generation hints for this template type
@@ -28,6 +29,34 @@ When generating gaps from the project description, think in these layers:
 
 Each gap = one PR-sized unit. Domain gaps come before UI gaps. Never mix logic and rendering in one gap.
 
+### Mandatory structural gaps — always generate these, regardless of project description
+
+**GAP-MVP** (insert after the combat engine gap, blocked by it):
+```
+phase: 1
+blocked_by: {combat engine gap}
+closes_when: A single file at src/mvp.html opens in a browser without a server
+  (double-click), shows a live hero stat block, one autonomous combat loop
+  resolving in real time, and a resource counter updating after combat —
+  all reading from domain state with no placeholder data.
+escalate_if: rendering one combat loop requires changing closed domain architecture.
+do_not: do not build scene routing, full UI screens, or any Phase 2 components.
+  This is a throwaway diagnostic file, not the production entry point.
+```
+
+**GAP-ENTRY** (insert after all Phase 2 gaps, blocked by them):
+```
+phase: 3
+blocked_by: {all Phase 2 screen gaps}
+closes_when: A file index.html exists at the repo root, imports all ui/ scene
+  modules as ES modules (type=module, no bundler), initialises the scene router,
+  and renders the full game starting from the title/load screen — all screens
+  navigable at localhost without webpack, vite, or any build step.
+escalate_if: scene routing requires a bundler that is not yet configured.
+do_not: do not add webpack, vite, parcel, or any build tooling.
+  Keep it vanilla ES modules only.
+```
+
 ---
 
 ## Step 1 — Task loop (every task)
@@ -41,8 +70,26 @@ Each gap = one PR-sized unit. Domain gaps come before UI gaps. Never mix logic a
 4. Announce which gap you are working on and why.
 5. Implement it completely — code + tests.
 6. Update the gap status to `closed` in `GAP_ANALYSIS.md`.
-7. If no open unblocked gap exists → check `DECISIONS.md` and surface the blocking decision to the user. Stop.
+7. Write an implementation entry to `IMPLEMENTATIONS.md` (see schema below). This step is mandatory — never close a gap without updating IMPLEMENTATIONS.md.
+8. If no open unblocked gap exists → check `DECISIONS.md` and surface the blocking decision to the user. Stop.
 
+---
+## Step 1b — Phase exit audit (run when all gaps in a phase are closed)
+
+Before moving to the next phase, audit the current deliverables:
+
+1. List every closes_when condition from all gaps in the completed phase.
+2. For each condition — verify it is actually true by inspecting the files.
+3. If any condition is not met or only partially met:
+   a. Generate a new gap (GAP-NNN continuing the sequence) to fix it.
+   b. Set phase = current phase, blocked_by = the gap whose closes_when failed.
+   c. Add it to GAP_ANALYSIS.md immediately.
+   d. Work it before advancing to the next phase.
+4. For UI phases specifically — also check:
+   - Every interactive element (button, input, action) produces a visible state change.
+   - No screen renders placeholder or hardcoded data where domain state should appear.
+   - Navigation between all screens works in both directions.
+5. Only advance to the next phase when all conditions are verified as true.
 ---
 
 ## Step 2 — Per-gap rules
@@ -90,19 +137,67 @@ do_not: {explicit constraint — what NOT to do in this gap}
 
 ---
 
+## IMPLEMENTATIONS.md schema
+
+### File header (created during bootstrap, once only)
+```
+# IMPLEMENTATIONS.md — What was built and why
+# Updated by Codex after every gap closes. Never edited manually.
+# Format: one entry per gap, in closing order. Changelog appended if gap is reopened.
+```
+
+### Entry format (append after every gap closes)
+```
+## GAP-{NNN} — {short title}
+closed_on: {YYYY-MM-DD}
+
+### What was built
+{2-5 bullet points describing the actual output — be specific: function names,
+exported interfaces, algorithms used, edge cases handled}
+
+### Files created
+{list every new file, one per line}
+
+### Files modified
+{list every modified file + one-line reason, one per line}
+  — if none, write: none
+
+### Test summary
+{number of tests added} tests added — {brief description of what they cover}
+  — if no tests, explain why
+
+### Implementation notes
+{any non-obvious decisions made during implementation — why this approach over
+alternatives, what was explicitly avoided, what future gaps should know}
+
+---
+### CHANGELOG
+{leave this section empty on first close — only append entries if this gap is reopened}
+```
+
+### Changelog entry format (append when a closed gap is reopened and modified)
+```
+#### {YYYY-MM-DD} — {fix/refactor/extend}: {short title} (reopened by {GAP-NNN or reason})
+- {what changed and why, one bullet per file touched}
+```
+
+---
+
 ## Folder contract (never restructure without a dedicated gap)
 
 ```
-domain/      — pure game logic, engine-agnostic
-ui/          — scenes, screens, rendering
-assets/      — sprites, audio, fonts (placeholders ok)
-src/         — shared utilities, helpers
-tests/       — all test files mirror src/domain/ui structure
-config/      — constants, settings, no logic
+domain/            — pure game logic, engine-agnostic
+ui/                — scenes, screens, rendering
+assets/            — sprites, audio, fonts (placeholders ok)
+src/               — shared utilities, helpers (also holds mvp.html)
+tests/             — all test files mirror src/domain/ui structure
+config/            — constants, settings, no logic
+index.html         — production entry point (created by GAP-ENTRY, not before)
 GAP_ANALYSIS.md
 DECISIONS.md
+IMPLEMENTATIONS.md — per-gap build log (created during bootstrap)
 AGENTS.md
-PROJECT.md   — one-line description (you read this for bootstrap)
+PROJECT.md         — one-line description (you read this for bootstrap)
 ```
 
 ---

@@ -11,9 +11,12 @@ blocking: GAP-021
 question: Should the initial visual asset pipeline assume pixel art for all 2D sprites and realm themes?
 options: Yes, use pixel art placeholders and style constraints | No, use a different 2D style before asset work begins
 impact: This determines placeholder sprite dimensions, scaling rules, shader treatment, and production art direction for the Phaser renderer.
+resolved: Yes, use pixel art placeholders and style constraints 
 
 ## DL-003 — Commander visual distinction
 blocking: GAP-017
 question: Should commanders use unique sprites distinct from army units, or visually upgraded variants of army-unit sprites?
 options: Unique commander sprites | Scaled or embellished army-unit sprites
 impact: This affects commander roster presentation, asset pipeline scope, visual progression overlays, and how clearly commanders read in combat.
+
+resolved: Unique commander sprites, each commander should have 3 sprites levels so the higher level the more epic it looks like

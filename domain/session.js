@@ -1,6 +1,9 @@
 const { createHero } = require("./hero.js");
 const { createCommanderRoster } = require("./commanders.js");
 const { createArmyRoster } = require("./army.js");
+const { createWorldProgression, getRealm, getZone } = require("./world.js");
+const { createFormation, validateFormation } = require("./formation.js");
+const { createResources } = require("./resources.js");
 
 const SESSION_STATUS = Object.freeze({
   RUNNING: "running",
@@ -42,6 +45,7 @@ const DEFAULT_STATE = Object.freeze({
     commanders: {},
     armyUnits: {},
   },
+  progression: createWorldProgression(),
 });
 
 function clone(value) {
@@ -82,16 +86,31 @@ function normalizeInitialState(initialState = {}) {
         state.roster.activeFormationUnitIds,
     ),
   });
+  const progression = createWorldProgression(
+    initialState.progression ?? state.progression,
+  );
+  const currentRealm = getRealm(progression.currentRealmId);
+  const currentZone =
+    progression.currentZoneId === null ? null : getZone(progression.currentZoneId);
+  const formation = validateFormation(
+    createFormation(initialState.formation?.slots ?? state.formation.slots),
+    {
+      ...commanderRoster,
+      ...armyRoster,
+    },
+  );
 
   return {
     ...state,
     ...clone(initialState),
     realm: {
-      ...state.realm,
+      id: currentRealm.id,
+      name: currentRealm.name,
+      index: currentRealm.index,
       ...clone(initialState.realm ?? {}),
     },
     zone: {
-      ...state.zone,
+      ...(currentZone ?? state.zone),
       ...clone(initialState.zone ?? {}),
     },
     roster: {
@@ -106,11 +125,11 @@ function normalizeInitialState(initialState = {}) {
     },
     formation: {
       ...state.formation,
-      ...clone(initialState.formation ?? {}),
+      ...formation,
     },
     resources: {
-      ...state.resources,
-      ...clone(initialState.resources ?? {}),
+      ...createResources(state.resources),
+      ...createResources(initialState.resources ?? {}),
     },
     visualProgression: {
       ...state.visualProgression,
@@ -128,6 +147,7 @@ function normalizeInitialState(initialState = {}) {
         ...clone(initialState.visualProgression?.armyUnits ?? {}),
       },
     },
+    progression,
   };
 }
 

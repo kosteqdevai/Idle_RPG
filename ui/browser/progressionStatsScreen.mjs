@@ -1,0 +1,13 @@
+import { button, panel, scenes, state } from "./state.mjs";
+
+export function renderProgressionStatsScreen() {
+  const progress = Math.round(state.hero.visualProgression * 100);
+
+  return panel(
+    "Progression",
+    `<p>Hero visual progression: ${progress}%</p>
+     <progress max="1" value="${state.hero.visualProgression}"></progress>
+     <p>Continuous values drive scale, glow, particles, and overlays.</p>
+     <div class="actions">${button("Hub", scenes.hub)}</div>`,
+  );
+}

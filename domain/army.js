@@ -5,6 +5,7 @@ const {
   ARMY_UNIT_STAT_GROWTH,
   ARMY_POWER_WEIGHTS,
   ARMY_EXPERIENCE,
+  ARMY_UPGRADE,
   ARMY_VISUAL_PROGRESSION,
 } = require("../config/army.js");
 
@@ -261,6 +262,51 @@ function deleteArmyUnit(roster, unitId) {
   });
 }
 
+function getArmyUnitUpgradeCost(unit) {
+  return Math.round(
+    ARMY_UPGRADE.goldBaseCost * ARMY_UPGRADE.goldGrowthFactor ** (unit.level - 1),
+  );
+}
+
+function upgradeArmyUnit(roster, resources, unitId) {
+  const currentRoster = createArmyRoster(roster);
+  const currentResources = {
+    gold: resources.gold ?? 0,
+    essence: resources.essence ?? 0,
+    realmShards: resources.realmShards ?? 0,
+  };
+  const unit = currentRoster.armyUnits.find((armyUnit) => armyUnit.id === unitId);
+
+  if (!unit) {
+    throw new RangeError("army unit must exist in roster");
+  }
+
+  const goldCost = getArmyUnitUpgradeCost(unit);
+  if (currentResources.gold < goldCost) {
+    throw new RangeError("not enough Gold to upgrade army unit");
+  }
+
+  const upgradedUnit = createArmyUnit(unit.archetypeId, {
+    id: unit.id,
+    experience: unit.experience + ARMY_UPGRADE.experiencePerUpgrade,
+  });
+
+  return {
+    roster: createArmyRoster({
+      ...currentRoster,
+      armyUnits: currentRoster.armyUnits.map((armyUnit) =>
+        armyUnit.id === unitId ? upgradedUnit : armyUnit,
+      ),
+    }),
+    resources: {
+      ...currentResources,
+      gold: currentResources.gold - goldCost,
+    },
+    upgradedUnit,
+    goldCost,
+  };
+}
+
 module.exports = {
   ARMY_ARCHETYPE_IDS,
   ARMY_SQUAD_ARCHETYPE_CAP,
@@ -275,6 +321,8 @@ module.exports = {
   calculateArmyUnitPower,
   calculateArmyUnitVisualProgression,
   deleteArmyUnit,
+  getArmyUnitUpgradeCost,
+  upgradeArmyUnit,
   getArmyUnitArchetype,
   getArmyUnitExperienceForLevel,
   getArmyUnitLevelForExperience,

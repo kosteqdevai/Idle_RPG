@@ -38,6 +38,67 @@ describe("core game session state", () => {
       commanders: {},
       armyUnits: {},
     });
+    expect(state.progression).toMatchObject({
+      unlockedRealmIds: ["verdant-kingdom"],
+      currentRealmId: "verdant-kingdom",
+      currentZoneId: "verdant-kingdom-1",
+    });
+  });
+
+  test("validates formation references against roster state", () => {
+    const session = createGameSession({
+      roster: {
+        armyUnits: [
+          {
+            id: "infantry",
+            archetypeId: "infantry",
+            name: "Infantry Squad",
+            role: "frontline",
+            level: 1,
+            experience: 0,
+            stats: {
+              attack: 4,
+              defense: 6,
+              health: 55,
+              speed: 2,
+            },
+            power: 26.7,
+            visualProgression: 0,
+          },
+        ],
+        armyComposition: [{ unitId: "infantry", count: 3 }],
+      },
+      formation: {
+        slots: [
+          {
+            slotId: "front-center",
+            occupantType: "army",
+            occupantId: "infantry",
+          },
+        ],
+      },
+    });
+
+    expect(session.snapshot().formation.slots).toEqual([
+      {
+        slotId: "front-center",
+        occupantType: "army",
+        occupantId: "infantry",
+      },
+    ]);
+    expect(() =>
+      createGameSession({
+        formation: {
+          slots: [
+            {
+              slotId: "front-center",
+              occupantType: "army",
+              occupantId: "missing",
+            },
+          ],
+        },
+      }),
+    ).toThrow(/composition/);
   });
 
   test("advances deterministic ticks without using real time", () => {

@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "jest --runInBand"
+    "start": "http-server . -p 8080 -o",
+    "test": "node --experimental-vm-modules .\\node_modules\\jest\\bin\\jest.js --runInBand"
   },
   "devDependencies": {
+    "http-server": "^14.1.1",
     "jest": "^30.0.0"
   },
   "jest": {
