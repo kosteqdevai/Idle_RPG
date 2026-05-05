@@ -24,7 +24,7 @@ do_not: do not add Gold costs, deletion rules, commander UI, or final commander 
 
 ## GAP-004 — Army unit roster and squad composition
 phase: 1
-status: open
+status: closed
 blocked_by: GAP-001
 closes_when: Jest tests prove the army roster can hold zone-agnostic unit archetypes, define player composition, calculate squad stats, reject deletion of units assigned to active formation, and expose continuous visual progression values.
 escalate_if: DL-001 is unresolved when baseline squad size or unit archetypes must be encoded.

@@ -1,5 +1,6 @@
 const { createHero } = require("./hero.js");
 const { createCommanderRoster } = require("./commanders.js");
+const { createArmyRoster } = require("./army.js");
 
 const SESSION_STATUS = Object.freeze({
   RUNNING: "running",
@@ -25,6 +26,8 @@ const DEFAULT_STATE = Object.freeze({
     commanders: [],
     activeCommanderIds: [],
     armyUnits: [],
+    armyComposition: [],
+    activeFormationUnitIds: [],
   },
   formation: {
     slots: [],
@@ -69,6 +72,16 @@ function normalizeInitialState(initialState = {}) {
       initialState.roster?.activeCommanderIds ?? state.roster.activeCommanderIds,
     ),
   });
+  const armyRoster = createArmyRoster({
+    armyUnits: clone(initialState.roster?.armyUnits ?? state.roster.armyUnits),
+    armyComposition: clone(
+      initialState.roster?.armyComposition ?? state.roster.armyComposition,
+    ),
+    activeFormationUnitIds: clone(
+      initialState.roster?.activeFormationUnitIds ??
+        state.roster.activeFormationUnitIds,
+    ),
+  });
 
   return {
     ...state,
@@ -87,6 +100,9 @@ function normalizeInitialState(initialState = {}) {
       hero,
       commanders: commanderRoster.commanders,
       activeCommanderIds: commanderRoster.activeCommanderIds,
+      armyUnits: armyRoster.armyUnits,
+      armyComposition: armyRoster.armyComposition,
+      activeFormationUnitIds: armyRoster.activeFormationUnitIds,
     },
     formation: {
       ...state.formation,

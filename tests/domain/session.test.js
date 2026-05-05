@@ -25,6 +25,8 @@ describe("core game session state", () => {
     expect(state.roster.commanders).toEqual([]);
     expect(state.roster.activeCommanderIds).toEqual([]);
     expect(state.roster.armyUnits).toEqual([]);
+    expect(state.roster.armyComposition).toEqual([]);
+    expect(state.roster.activeFormationUnitIds).toEqual([]);
     expect(state.formation.slots).toEqual([]);
     expect(state.resources).toEqual({
       gold: 0,
