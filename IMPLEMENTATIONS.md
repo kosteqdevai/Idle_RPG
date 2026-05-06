@@ -25,6 +25,65 @@ Implementation inferred from domain/session.js and its mirrored test file.
 ---
 ### CHANGELOG
 
+## GAP-027 — Corpse-based army roster redesign
+closed_on: 2026-05-05
+
+### What was built
+- Replaced level/stat/Gold-upgrade army units with realm race unit tiers that use only `power`, `quantity`, `corpseType`, and `corpseCost`.
+- Added typed corpse resources and combat corpse drops using realm-specific weighted zone tables and zone-band enemy counts.
+- Changed army combat contribution to auto-deployed `quantity * power` while formation stays dormant/read-only.
+- Reworked army roster UI actions from Gold upgrades to corpse-based raising, including browser feedback and corpse inventory display.
+
+### Files created
+none
+
+### Files modified
+config/army.js — added realm races, five-tier unit ladder, corpse costs, and zone drop tables
+domain/army.js — replaced the old squad upgrade model with corpse-raised unit quantities and army power helpers
+domain/resources.js — added typed corpse storage and combat corpse reward application
+domain/combat.js — added army quantity power and deterministic corpse drops to combat rewards
+domain/formation.js — made army formation dormant while retaining commander formation contribution
+domain/session.js — new sessions now know every army unit at quantity 0 and include corpse resources
+domain/commanders.js — commander summoning now preserves corpse resources
+domain/world.js — realm unlocks now preserve corpse resources
+ui/armyRosterScreen.js — army screen now exposes corpse inventory and raise actions
+ui/formationScreen.js — formation screen is read-only/dormant and reports auto-deployed army power
+ui/progressionStatsScreen.js — army progression reports quantity and total Power
+ui/browser/state.mjs — browser seed state now starts all army units at quantity 0 with empty corpses
+ui/browser/combatScreen.mjs — browser combat awards and displays typed corpse drops
+ui/browser/armyRosterScreen.mjs — browser army screen raises units from corpses
+ui/browser/formationScreen.mjs — browser formation screen explains dormant auto-deployment
+ui/browser/app.mjs — browser click handling now raises units instead of upgrading Infantry
+ui/browser/mainHubScreen.mjs — hub shows total corpse count
+ui/browser/progressionStatsScreen.mjs — progression shows raised army Power
+index.html — refreshed the browser app module query for the army redesign
+tests/domain/army.test.js — covered zero-quantity rosters, Power-only units, raising, and corpse drops
+tests/domain/combat.test.js — covered corpse rewards and quantity-based army power
+tests/domain/resources.test.js — covered typed corpse resources and combat reward sources
+tests/domain/formation.test.js — covered dormant formation behavior
+tests/domain/session.test.js — updated new-game and resource expectations for corpse armies
+tests/domain/world.test.js — updated realm unlock resource expectations for corpse preservation
+tests/domain/persistence.test.js — updated save/load fixtures for corpse-based army state
+tests/domain/offline.test.js — updated resource expectations for corpse resource preservation
+tests/domain/commanders.test.js — covered commander summoning with corpse resource preservation
+tests/ui/armyRosterScreen.test.js — covered corpse inventory and raising flow
+tests/ui/formationScreen.test.js — covered read-only dormant formation state
+tests/ui/combatScreen.test.js — covered corpse rewards applied through combat finish
+tests/ui/mainHubScreen.test.js — updated resource surface for corpses
+tests/ui/progressionStatsScreen.test.js — covered quantity/Power army progression
+tests/ui/visualProgressionPipeline.test.js — updated army placeholder expectations for new unit ids
+tests/ui/browserApp.test.js — covered browser corpse drops, raise action, and dormant formation flow
+tests/ui/offlineReturnScreen.test.js — updated offline resource shape with corpses
+
+### Test summary
+Updated domain and UI/browser coverage — 120 tests pass, covering zero-quantity starts, typed corpse drops, corpse spending, quantity-based army power, and dormant formation presentation.
+
+### Implementation notes
+The redesign keeps corpses as a nested resource family instead of overloading Gold/Essence/Realm Shards. Combat drops corpses on every result, while raised army power is automatically counted in combat; old army composition and active formation arrays remain as empty compatibility fields so persistence and scene state shapes stay stable.
+
+---
+### CHANGELOG
+
 ## GAP-026 — Combat XP and Essence drops
 closed_on: 2026-05-05
 

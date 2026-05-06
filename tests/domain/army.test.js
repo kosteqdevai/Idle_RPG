@@ -1,180 +1,109 @@
 const {
-  ARMY_ARCHETYPE_IDS,
-  ARMY_SQUAD_ARCHETYPE_CAP,
   ARMY_UNIT_ARCHETYPES,
   createArmyUnit,
-  createArmyRoster,
   createStartingArmyRoster,
-  setArmyComposition,
-  setActiveFormationUnitIds,
+  calculateArmyRosterPower,
   calculateArmySquadStats,
-  calculateArmyUnitPower,
-  calculateArmyUnitVisualProgression,
-  deleteArmyUnit,
-  getArmyUnitUpgradeCost,
-  upgradeArmyUnit,
-  getArmyUnitExperienceForLevel,
-  getArmyUnitLevelForExperience,
+  getArmyUnitsForRealm,
+  getZoneCorpseDrop,
+  raiseArmyUnit,
 } = require("../../domain/army.js");
 
-describe("army unit roster and squad composition", () => {
-  test("defines the resolved small-squad archetypes as zone-agnostic units", () => {
-    expect(ARMY_UNIT_ARCHETYPES.map((unit) => unit.id)).toEqual([
-      ARMY_ARCHETYPE_IDS.INFANTRY,
-      ARMY_ARCHETYPE_IDS.ARCHER,
-      ARMY_ARCHETYPE_IDS.CAVALRY,
-    ]);
-    expect(ARMY_SQUAD_ARCHETYPE_CAP).toBe(3);
+describe("corpse-based army roster", () => {
+  test("new rosters initialize every configured realm unit at zero quantity", () => {
+    const roster = createStartingArmyRoster();
 
-    const infantry = createArmyUnit(ARMY_ARCHETYPE_IDS.INFANTRY);
-    expect(infantry).toMatchObject({
-      id: "infantry",
-      archetypeId: "infantry",
-      role: "frontline",
-      level: 1,
-      experience: 0,
-      stats: {
-        attack: 4,
-        defense: 6,
-        health: 55,
-        speed: 2,
+    expect(roster.armyUnits).toHaveLength(20);
+    expect(roster.armyUnits.every((unit) => unit.quantity === 0)).toBe(true);
+    expect(roster.armyComposition).toEqual([]);
+    expect(roster.activeFormationUnitIds).toEqual([]);
+    expect(roster.armyUnits[0]).toMatchObject({
+      id: "human-peasant",
+      name: "Human Peasant",
+      race: "human",
+      tier: 1,
+      power: 5,
+      corpseType: "human-peasant-corpse",
+      corpseCost: 1,
+    });
+    expect(ARMY_UNIT_ARCHETYPES.map((unit) => unit.id)).toContain("orc-knight");
+    expect(getArmyUnitsForRealm("frostbound-keep").map((unit) => unit.id)).toEqual([
+      "undead-peasant",
+      "undead-soldier",
+      "undead-guard",
+      "undead-knight",
+      "undead-champion",
+    ]);
+  });
+
+  test("units expose Power and quantity without level or stat attributes", () => {
+    const unit = createArmyUnit("orc-knight", { quantity: 2 });
+
+    expect(unit).toMatchObject({
+      id: "orc-knight",
+      power: 42,
+      quantity: 2,
+      corpseCost: 2,
+    });
+    expect(unit).not.toHaveProperty("level");
+    expect(unit).not.toHaveProperty("stats");
+    expect(calculateArmyRosterPower({ armyUnits: [unit] })).toBe(84);
+    expect(calculateArmySquadStats({ armyUnits: [unit] })).toMatchObject({
+      power: 84,
+      unitCount: 2,
+    });
+  });
+
+  test("raising a unit spends matching corpses and increments quantity", () => {
+    const roster = createStartingArmyRoster();
+    const result = raiseArmyUnit(
+      roster,
+      {
+        gold: 3,
+        essence: 1,
+        realmShards: 0,
+        corpses: { "orc-knight-corpse": 2 },
       },
-      power: 26.7,
-      visualProgression: 0,
-    });
-  });
-
-  test("derives army unit level from experience", () => {
-    expect(getArmyUnitExperienceForLevel(1)).toBe(0);
-    expect(getArmyUnitExperienceForLevel(2)).toBe(45);
-    expect(getArmyUnitExperienceForLevel(3)).toBe(101);
-
-    expect(getArmyUnitLevelForExperience(0)).toBe(1);
-    expect(getArmyUnitLevelForExperience(44)).toBe(1);
-    expect(getArmyUnitLevelForExperience(45)).toBe(2);
-    expect(getArmyUnitLevelForExperience(101)).toBe(3);
-  });
-
-  test("creates a global roster with player-defined squad composition", () => {
-    const roster = createStartingArmyRoster();
-
-    expect(roster.armyUnits.map((unit) => unit.archetypeId)).toEqual([
-      "infantry",
-      "archer",
-      "cavalry",
-    ]);
-    expect(roster.armyComposition).toEqual([
-      { unitId: "infantry", count: 6 },
-      { unitId: "archer", count: 4 },
-      { unitId: "cavalry", count: 2 },
-    ]);
-
-    const revisedRoster = setArmyComposition(roster, [
-      { unitId: "infantry", count: 8 },
-      { unitId: "archer", count: 3 },
-    ]);
-
-    expect(revisedRoster.armyComposition).toEqual([
-      { unitId: "infantry", count: 8 },
-      { unitId: "archer", count: 3 },
-    ]);
-  });
-
-  test("calculates aggregate squad stats from composition counts", () => {
-    const stats = calculateArmySquadStats(createStartingArmyRoster());
-
-    expect(stats).toEqual({
-      attack: 64,
-      defense: 52,
-      health: 546,
-      speed: 3,
-      power: 321.72,
-      unitCount: 12,
-      visualProgression: 0,
-    });
-  });
-
-  test("rejects deleting a unit assigned to active formation", () => {
-    const roster = setActiveFormationUnitIds(createStartingArmyRoster(), [
-      "infantry",
-    ]);
-
-    expect(() => deleteArmyUnit(roster, "infantry")).toThrow(/active/);
-
-    const updatedRoster = deleteArmyUnit(roster, "archer");
-    expect(updatedRoster.armyUnits.map((unit) => unit.id)).toEqual([
-      "infantry",
-      "cavalry",
-    ]);
-    expect(updatedRoster.armyComposition.map((entry) => entry.unitId)).toEqual([
-      "infantry",
-      "cavalry",
-    ]);
-  });
-
-  test("visual progression is a continuous function of unit power", () => {
-    const infantry = createArmyUnit("infantry", {
-      level: 5,
-      experience: getArmyUnitExperienceForLevel(5),
-    });
-
-    expect(infantry.power).toBe(calculateArmyUnitPower(infantry.stats));
-    expect(infantry.visualProgression).toBeGreaterThan(0);
-    expect(calculateArmyUnitVisualProgression("infantry", 80)).toBeGreaterThan(
-      calculateArmyUnitVisualProgression("infantry", 79),
+      "orc-knight",
     );
-    expect(calculateArmyUnitVisualProgression("infantry", 80)).toBeLessThan(1);
-  });
+    const raised = result.roster.armyUnits.find((unit) => unit.id === "orc-knight");
 
-  test("upgrades army units with Gold and exposes improved visual progression", () => {
-    const roster = createStartingArmyRoster();
-    const infantry = roster.armyUnits.find((unit) => unit.id === "infantry");
-
-    expect(getArmyUnitUpgradeCost(infantry)).toBe(30);
-
-    const result = upgradeArmyUnit(roster, { gold: 40 }, "infantry");
-
+    expect(raised.quantity).toBe(1);
+    expect(raised.visualProgression).toBeGreaterThan(0);
     expect(result.resources).toEqual({
-      gold: 10,
-      essence: 0,
+      gold: 3,
+      essence: 1,
       realmShards: 0,
+      corpses: { "orc-knight-corpse": 0 },
     });
-    expect(result.upgradedUnit.level).toBe(2);
-    expect(result.upgradedUnit.power).toBeGreaterThan(infantry.power);
-    expect(result.upgradedUnit.visualProgression).toBeGreaterThan(
-      infantry.visualProgression,
-    );
     expect(() =>
-      upgradeArmyUnit(roster, { gold: 29 }, "infantry"),
-    ).toThrow(/Gold/);
+      raiseArmyUnit(roster, { corpses: { "orc-knight-corpse": 1 } }, "orc-knight"),
+    ).toThrow(/corpses/);
   });
 
-  test("validates roster, composition, and active formation references", () => {
-    const infantry = createArmyUnit("infantry");
+  test("zone corpse drops use weighted unit selection and tier-adjusted counts", () => {
+    const zoneOne = { realmId: "verdant-kingdom", index: 1 };
+    const zoneFive = { realmId: "ashen-marches", index: 5 };
 
-    expect(() =>
-      createArmyRoster({
-        armyUnits: [infantry, infantry],
-      }),
-    ).toThrow(/duplicate/);
-    expect(() =>
-      createArmyRoster({
-        armyUnits: [infantry],
-        armyComposition: [{ unitId: "archer", count: 1 }],
-      }),
-    ).toThrow(/exist/);
-    expect(() =>
-      createArmyRoster({
-        armyUnits: [infantry],
-        armyComposition: [{ unitId: "infantry", count: 0 }],
-      }),
-    ).toThrow(/positive/);
-    expect(() =>
-      createArmyRoster({
-        armyUnits: [infantry],
-        activeFormationUnitIds: ["archer"],
-      }),
-    ).toThrow(/exist/);
-    expect(() => createArmyUnit("mage")).toThrow(/unknown/);
+    expect(getZoneCorpseDrop(zoneOne, 0.01)).toEqual({
+      corpseType: "human-peasant-corpse",
+      unitId: "human-peasant",
+      unitName: "Human Peasant",
+      quantity: 3,
+    });
+    expect(getZoneCorpseDrop(zoneFive, 0.95)).toEqual({
+      corpseType: "orc-champion-corpse",
+      unitId: "orc-champion",
+      unitName: "Orc Champion",
+      quantity: 5,
+    });
+  });
+
+  test("validates quantities, corpse references, and unknown units", () => {
+    expect(() => createArmyUnit("human-peasant", { quantity: -1 })).toThrow(
+      RangeError,
+    );
+    expect(() => createArmyUnit("infantry")).toThrow(/unknown/);
+    expect(() => getArmyUnitsForRealm("missing")).toThrow(/realm/);
   });
 });

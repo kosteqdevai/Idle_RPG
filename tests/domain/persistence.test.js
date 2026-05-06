@@ -23,6 +23,9 @@ function createFullState() {
       gold: 123,
       essence: 25,
       realmShards: 3,
+      corpses: {
+        "human-peasant-corpse": 2,
+      },
     },
     roster: {
       hero: {
@@ -31,24 +34,12 @@ function createFullState() {
       commanders: [commander],
       activeCommanderIds: [commander.id],
       armyUnits: [
-        createArmyUnit("infantry"),
-        createArmyUnit("archer"),
-        createArmyUnit("cavalry"),
+        createArmyUnit("human-peasant", { quantity: 2 }),
+        createArmyUnit("human-soldier", { quantity: 1 }),
       ],
-      armyComposition: [
-        { unitId: "infantry", count: 6 },
-        { unitId: "archer", count: 4 },
-        { unitId: "cavalry", count: 2 },
-      ],
-      activeFormationUnitIds: ["infantry"],
     },
     formation: {
       slots: [
-        {
-          slotId: "front-center",
-          occupantType: "army",
-          occupantId: "infantry",
-        },
         {
           slotId: "back-center",
           occupantType: "commander",
@@ -69,7 +60,7 @@ function createFullState() {
         [commander.id]: 0.1,
       },
       armyUnits: {
-        infantry: 0.2,
+        "human-peasant": 0.2,
       },
     },
   }).snapshot();
@@ -83,8 +74,8 @@ describe("storage abstraction and persistence", () => {
     expect(restored).toEqual(state);
     expect(restored.roster.hero.level).toBe(3);
     expect(restored.roster.commanders).toHaveLength(1);
-    expect(restored.roster.armyComposition).toHaveLength(3);
-    expect(restored.formation.slots).toHaveLength(2);
+    expect(restored.roster.armyUnits).toHaveLength(2);
+    expect(restored.formation.slots).toHaveLength(1);
     expect(restored.progression.currentZoneId).toBe("verdant-kingdom-2");
     expect(restored.visualProgression).toMatchObject({
       hero: 0.35,
@@ -92,7 +83,7 @@ describe("storage abstraction and persistence", () => {
         "vanguard-captain": 0.1,
       },
       armyUnits: {
-        infantry: 0.2,
+        "human-peasant": 0.2,
       },
     });
   });
@@ -118,6 +109,9 @@ describe("storage abstraction and persistence", () => {
         gold: 123,
         essence: 25,
         realmShards: 3,
+        corpses: {
+          "human-peasant-corpse": 2,
+        },
       },
     });
   });

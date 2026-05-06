@@ -24,7 +24,8 @@ describe("core game session state", () => {
     });
     expect(state.roster.commanders).toEqual([]);
     expect(state.roster.activeCommanderIds).toEqual([]);
-    expect(state.roster.armyUnits).toEqual([]);
+    expect(state.roster.armyUnits).toHaveLength(20);
+    expect(state.roster.armyUnits.every((unit) => unit.quantity === 0)).toBe(true);
     expect(state.roster.armyComposition).toEqual([]);
     expect(state.roster.activeFormationUnitIds).toEqual([]);
     expect(state.formation.slots).toEqual([]);
@@ -32,6 +33,7 @@ describe("core game session state", () => {
       gold: 0,
       essence: 0,
       realmShards: 0,
+      corpses: {},
     });
     expect(state.visualProgression).toEqual({
       hero: 0,
@@ -50,30 +52,18 @@ describe("core game session state", () => {
       roster: {
         armyUnits: [
           {
-            id: "infantry",
-            archetypeId: "infantry",
-            name: "Infantry Squad",
-            role: "frontline",
-            level: 1,
-            experience: 0,
-            stats: {
-              attack: 4,
-              defense: 6,
-              health: 55,
-              speed: 2,
-            },
-            power: 26.7,
-            visualProgression: 0,
+            id: "human-peasant",
+            archetypeId: "human-peasant",
+            quantity: 1,
           },
         ],
-        armyComposition: [{ unitId: "infantry", count: 3 }],
       },
       formation: {
         slots: [
           {
             slotId: "front-center",
             occupantType: "army",
-            occupantId: "infantry",
+            occupantId: "human-peasant",
           },
         ],
       },
@@ -83,7 +73,7 @@ describe("core game session state", () => {
       {
         slotId: "front-center",
         occupantType: "army",
-        occupantId: "infantry",
+        occupantId: "human-peasant",
       },
     ]);
     expect(() =>
@@ -98,7 +88,7 @@ describe("core game session state", () => {
           ],
         },
       }),
-    ).toThrow(/composition/);
+    ).toThrow(/roster/);
   });
 
   test("advances deterministic ticks without using real time", () => {
@@ -171,6 +161,7 @@ describe("core game session state", () => {
         gold: 50,
         essence: 0,
         realmShards: 0,
+        corpses: {},
       },
       visualProgression: {
         hero: 0.35,

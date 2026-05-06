@@ -1,6 +1,6 @@
 const { createHero } = require("./hero.js");
 const { createCommanderRoster } = require("./commanders.js");
-const { createArmyRoster } = require("./army.js");
+const { createArmyRoster, createStartingArmyRoster } = require("./army.js");
 const { createWorldProgression, getRealm, getZone } = require("./world.js");
 const { createFormation, validateFormation } = require("./formation.js");
 const { createResources } = require("./resources.js");
@@ -9,6 +9,8 @@ const SESSION_STATUS = Object.freeze({
   RUNNING: "running",
   PAUSED: "paused",
 });
+
+const DEFAULT_ARMY_ROSTER = createStartingArmyRoster();
 
 const DEFAULT_STATE = Object.freeze({
   status: SESSION_STATUS.RUNNING,
@@ -28,9 +30,9 @@ const DEFAULT_STATE = Object.freeze({
     hero: createHero(),
     commanders: [],
     activeCommanderIds: [],
-    armyUnits: [],
-    armyComposition: [],
-    activeFormationUnitIds: [],
+    armyUnits: DEFAULT_ARMY_ROSTER.armyUnits,
+    armyComposition: DEFAULT_ARMY_ROSTER.armyComposition,
+    activeFormationUnitIds: DEFAULT_ARMY_ROSTER.activeFormationUnitIds,
   },
   formation: {
     slots: [],
@@ -39,6 +41,7 @@ const DEFAULT_STATE = Object.freeze({
     gold: 0,
     essence: 0,
     realmShards: 0,
+    corpses: {},
   },
   visualProgression: {
     hero: 0,

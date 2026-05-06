@@ -175,6 +175,7 @@ function summonCommander(roster, resources, commanderId) {
     gold: resources.gold ?? 0,
     essence: resources.essence ?? 0,
     realmShards: resources.realmShards ?? 0,
+    corpses: structuredClone(resources.corpses ?? {}),
   };
 
   if (currentResources.essence < COMMANDER_SUMMON_ESSENCE_COST) {

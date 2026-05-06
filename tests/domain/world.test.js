@@ -89,6 +89,7 @@ describe("realm and zone progression model", () => {
       gold: 10,
       essence: 5,
       realmShards: 0,
+      corpses: {},
     });
   });
 

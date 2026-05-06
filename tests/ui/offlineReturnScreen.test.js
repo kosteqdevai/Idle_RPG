@@ -55,6 +55,7 @@ describe("offline return screen state", () => {
           gold: 233,
           essence: 4,
           realmShards: 4,
+          corpses: {},
         },
         lastSeenAt: null,
       },

@@ -20,11 +20,15 @@ function createResources(overrides = {}) {
     gold: overrides.gold ?? 0,
     essence: overrides.essence ?? 0,
     realmShards: overrides.realmShards ?? 0,
+    corpses: structuredClone(overrides.corpses ?? {}),
   };
 
   assertNonNegativeInteger(resources.gold, "gold");
   assertNonNegativeInteger(resources.essence, "essence");
   assertNonNegativeInteger(resources.realmShards, "realmShards");
+  for (const [corpseType, quantity] of Object.entries(resources.corpses)) {
+    assertNonNegativeInteger(quantity, `${corpseType} quantity`);
+  }
 
   return resources;
 }
@@ -32,11 +36,16 @@ function createResources(overrides = {}) {
 function addResources(resources, delta) {
   const currentResources = createResources(resources);
   const resourceDelta = createResources(delta);
+  const corpses = { ...currentResources.corpses };
+  for (const [corpseType, quantity] of Object.entries(resourceDelta.corpses)) {
+    corpses[corpseType] = (corpses[corpseType] ?? 0) + quantity;
+  }
 
   return {
     gold: currentResources.gold + resourceDelta.gold,
     essence: currentResources.essence + resourceDelta.essence,
     realmShards: currentResources.realmShards + resourceDelta.realmShards,
+    corpses,
   };
 }
 
@@ -51,12 +60,23 @@ function getCombatRewardSources(zoneId, combatRewards) {
       rewards.realmShards > 0 && rewards.realmShards === zone.shardReward
         ? "specific-zone-drop"
         : "none",
+    corpses: combatRewards.corpseDrop ? "combat-corpse-drop" : "none",
   };
 }
 
 function applyCombatRewards(resources, zoneId, combatRewards) {
   const sources = getCombatRewardSources(zoneId, combatRewards);
-  const rewards = createResources(combatRewards);
+  const rewards = createResources({
+    gold: combatRewards.gold,
+    essence: combatRewards.essence,
+    realmShards: combatRewards.realmShards,
+    corpses: combatRewards.corpseDrop
+      ? {
+          [combatRewards.corpseDrop.corpseType]:
+            combatRewards.corpseDrop.quantity,
+        }
+      : combatRewards.corpses,
+  });
 
   if (rewards.realmShards > 0 && sources.realmShards !== "specific-zone-drop") {
     throw new RangeError("Realm Shards must come from the zone shard reward");

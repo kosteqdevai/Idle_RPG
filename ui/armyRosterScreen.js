@@ -1,8 +1,4 @@
-const {
-  deleteArmyUnit,
-  getArmyUnitUpgradeCost,
-  upgradeArmyUnit,
-} = require("../domain/army.js");
+const { raiseArmyUnit } = require("../domain/army.js");
 const { SCENE_IDS } = require("./sceneRouter.js");
 
 function createArmyRosterViewModel(domainState, error = null) {
@@ -10,23 +6,25 @@ function createArmyRosterViewModel(domainState, error = null) {
     throw new TypeError("domainState is required");
   }
 
+  const corpses = domainState.resources.corpses ?? {};
+
   return {
-    gold: domainState.resources.gold,
+    corpses: { ...corpses },
+    totalCorpses: Object.values(corpses).reduce((total, quantity) => total + quantity, 0),
     armyUnits: domainState.roster.armyUnits.map((unit) => ({
       id: unit.id,
       name: unit.name,
-      role: unit.role,
-      level: unit.level,
+      race: unit.race,
+      tier: unit.tier,
       power: unit.power,
-      stats: { ...unit.stats },
+      quantity: unit.quantity,
+      totalPower: unit.power * unit.quantity,
+      corpseType: unit.corpseType,
+      corpseCost: unit.corpseCost,
+      availableCorpses: corpses[unit.corpseType] ?? 0,
+      canRaise: (corpses[unit.corpseType] ?? 0) >= unit.corpseCost,
       visualProgression: unit.visualProgression,
-      upgradeCost: getArmyUnitUpgradeCost(unit),
-      activeFormation: domainState.roster.activeFormationUnitIds.includes(unit.id),
-      inComposition: domainState.roster.armyComposition.some(
-        (entry) => entry.unitId === unit.id,
-      ),
     })),
-    composition: domainState.roster.armyComposition.map((entry) => ({ ...entry })),
     error,
   };
 }
@@ -57,10 +55,10 @@ function createArmyRosterScreen({ router } = {}) {
     getViewModel() {
       return createArmyRosterViewModel(getDomainState(), lastError);
     },
-    upgrade(unitId) {
+    raise(unitId) {
       try {
         const domainState = getDomainState();
-        const result = upgradeArmyUnit(
+        const result = raiseArmyUnit(
           domainState.roster,
           domainState.resources,
           unitId,
@@ -73,24 +71,6 @@ function createArmyRosterScreen({ router } = {}) {
             armyUnits: result.roster.armyUnits,
           },
           resources: result.resources,
-        });
-      } catch (error) {
-        return reportError(error);
-      }
-    },
-    delete(unitId) {
-      try {
-        const domainState = getDomainState();
-        const roster = deleteArmyUnit(domainState.roster, unitId);
-
-        return updateDomainState({
-          ...domainState,
-          roster: {
-            ...domainState.roster,
-            armyUnits: roster.armyUnits,
-            armyComposition: roster.armyComposition,
-            activeFormationUnitIds: roster.activeFormationUnitIds,
-          },
         });
       } catch (error) {
         return reportError(error);

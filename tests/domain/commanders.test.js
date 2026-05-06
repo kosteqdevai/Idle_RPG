@@ -73,6 +73,7 @@ describe("commander roster and summoning model", () => {
       gold: 999,
       essence: 0,
       realmShards: 4,
+      corpses: {},
     });
     expect(() =>
       summonCommander(

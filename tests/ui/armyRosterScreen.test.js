@@ -1,4 +1,3 @@
-const { createStartingArmyRoster } = require("../../domain/army.js");
 const { createGameSession } = require("../../domain/session.js");
 const { createSceneRouter, SCENE_IDS } = require("../../ui/sceneRouter.js");
 const {
@@ -10,109 +9,64 @@ function createDomainState(overrides = {}) {
   return createGameSession({
     resources: {
       gold: 100,
-      ...(overrides.resources ?? {}),
+      corpses: {
+        "human-peasant-corpse": 1,
+        ...(overrides.corpses ?? {}),
+      },
     },
-    roster: {
-      ...createStartingArmyRoster(),
-      ...(overrides.roster ?? {}),
-    },
+    roster: overrides.roster ?? {},
   }).snapshot();
 }
 
-describe("army roster screen state", () => {
-  test("lists global units, composition, upgrade costs, active state, and visual progression", () => {
-    const domainState = createDomainState({
-      roster: {
-        ...createStartingArmyRoster(),
-        activeFormationUnitIds: ["infantry"],
-      },
-    });
+describe("corpse-based army roster screen state", () => {
+  test("lists units with quantity, Power, corpse inventory, and raise costs", () => {
+    const viewModel = createArmyRosterViewModel(createDomainState());
+    const peasant = viewModel.armyUnits.find((unit) => unit.id === "human-peasant");
 
-    expect(createArmyRosterViewModel(domainState)).toMatchObject({
-      gold: 100,
-      armyUnits: [
-        {
-          id: "infantry",
-          level: 1,
-          upgradeCost: 30,
-          activeFormation: true,
-          inComposition: true,
-          visualProgression: 0,
-        },
-        {
-          id: "archer",
-          activeFormation: false,
-          inComposition: true,
-        },
-        {
-          id: "cavalry",
-          activeFormation: false,
-          inComposition: true,
-        },
-      ],
-      composition: [
-        { unitId: "infantry", count: 6 },
-        { unitId: "archer", count: 4 },
-        { unitId: "cavalry", count: 2 },
-      ],
-      error: null,
+    expect(viewModel.totalCorpses).toBe(1);
+    expect(peasant).toMatchObject({
+      id: "human-peasant",
+      race: "human",
+      tier: 1,
+      power: 5,
+      quantity: 0,
+      totalPower: 0,
+      corpseType: "human-peasant-corpse",
+      corpseCost: 1,
+      availableCorpses: 1,
+      canRaise: true,
     });
   });
 
-  test("upgrades units through Gold where domain rules allow", () => {
+  test("raises units through matching corpses", () => {
     const router = createSceneRouter({
       currentScene: SCENE_IDS.ARMY_ROSTER,
       domainState: createDomainState(),
     });
     const screen = createArmyRosterScreen({ router });
 
-    const viewModel = screen.upgrade("infantry");
-    const infantry = viewModel.armyUnits.find((unit) => unit.id === "infantry");
+    const viewModel = screen.raise("human-peasant");
+    const peasant = viewModel.armyUnits.find((unit) => unit.id === "human-peasant");
 
-    expect(viewModel.gold).toBe(70);
-    expect(infantry.level).toBe(2);
-    expect(infantry.visualProgression).toBeGreaterThan(0);
-    expect(router.snapshot().domainState.resources.gold).toBe(70);
+    expect(peasant.quantity).toBe(1);
+    expect(peasant.totalPower).toBe(5);
+    expect(peasant.availableCorpses).toBe(0);
+    expect(router.snapshot().domainState.resources.corpses["human-peasant-corpse"]).toBe(0);
   });
 
-  test("reports upgrade errors without spending resources", () => {
+  test("reports corpse errors without mutating resources", () => {
     const router = createSceneRouter({
       currentScene: SCENE_IDS.ARMY_ROSTER,
       domainState: createDomainState({
-        resources: {
-          gold: 29,
+        corpses: {
+          "human-peasant-corpse": 0,
         },
       }),
     });
     const screen = createArmyRosterScreen({ router });
 
-    expect(screen.upgrade("infantry").error).toMatch(/Gold/);
-    expect(router.snapshot().domainState.resources.gold).toBe(29);
-  });
-
-  test("blocks deleting active formation units and deletes inactive units", () => {
-    const router = createSceneRouter({
-      currentScene: SCENE_IDS.ARMY_ROSTER,
-      domainState: createDomainState({
-        roster: {
-          ...createStartingArmyRoster(),
-          activeFormationUnitIds: ["infantry"],
-        },
-      }),
-    });
-    const screen = createArmyRosterScreen({ router });
-
-    expect(screen.delete("infantry").error).toMatch(/active/);
-    const viewModel = screen.delete("archer");
-
-    expect(viewModel.armyUnits.map((unit) => unit.id)).toEqual([
-      "infantry",
-      "cavalry",
-    ]);
-    expect(viewModel.composition.map((entry) => entry.unitId)).toEqual([
-      "infantry",
-      "cavalry",
-    ]);
+    expect(screen.raise("human-peasant").error).toMatch(/corpses/);
+    expect(router.snapshot().domainState.resources.corpses["human-peasant-corpse"]).toBe(0);
   });
 
   test("routes back to hub and requires router/domain state", () => {

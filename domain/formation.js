@@ -57,26 +57,23 @@ function createFormation(slots = []) {
 
 function getArmyUnitDeploymentStats(armyRoster, unitId) {
   const unit = armyRoster.armyUnits.find((candidate) => candidate.id === unitId);
-  const composition = armyRoster.armyComposition.find(
-    (entry) => entry.unitId === unitId,
-  );
 
-  if (!unit || !composition) {
-    throw new RangeError("deployed army unit must exist in army composition");
+  if (!unit) {
+    throw new RangeError("deployed army unit must exist in roster");
   }
 
   return {
     id: unit.id,
     type: "army",
-    role: unit.role,
-    count: composition.count,
+    role: "dormant",
+    count: unit.quantity,
     stats: {
-      attack: unit.stats.attack * composition.count,
-      defense: unit.stats.defense * composition.count,
-      health: unit.stats.health * composition.count,
-      speed: unit.stats.speed,
+      attack: 0,
+      defense: 0,
+      health: 0,
+      speed: 0,
     },
-    power: unit.power * composition.count,
+    power: unit.power * unit.quantity,
     visualProgression: unit.visualProgression,
   };
 }
@@ -173,11 +170,13 @@ function buildFormationCombatInput(formation, roster) {
   const currentFormation = validateFormation(formation, roster);
   const armyRoster = createArmyRoster(roster);
   const commanderRoster = createCommanderRoster(roster);
-  const combatants = currentFormation.slots.map((entry) => {
-    const slot = getFormationSlot(entry.slotId);
-    const baseCombatant = getBaseCombatant(entry, armyRoster, commanderRoster);
-    return applySlotModifiers(baseCombatant, slot);
-  });
+  const combatants = currentFormation.slots
+    .filter((entry) => entry.occupantType === "commander")
+    .map((entry) => {
+      const slot = getFormationSlot(entry.slotId);
+      const baseCombatant = getBaseCombatant(entry, armyRoster, commanderRoster);
+      return applySlotModifiers(baseCombatant, slot);
+    });
 
   return {
     combatants,
@@ -197,41 +196,8 @@ function buildFormationCombatInput(formation, roster) {
 }
 
 function createDefaultFormation(roster) {
-  const armyRoster = createArmyRoster(roster);
   const commanderRoster = createCommanderRoster(roster);
   const slots = [];
-
-  const infantry = armyRoster.armyComposition.find(
-    (entry) => entry.unitId === "infantry",
-  );
-  const archer = armyRoster.armyComposition.find(
-    (entry) => entry.unitId === "archer",
-  );
-  const cavalry = armyRoster.armyComposition.find(
-    (entry) => entry.unitId === "cavalry",
-  );
-
-  if (infantry) {
-    slots.push({
-      slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
-      occupantType: "army",
-      occupantId: infantry.unitId,
-    });
-  }
-  if (archer) {
-    slots.push({
-      slotId: FORMATION_SLOT_IDS.BACK_LEFT,
-      occupantType: "army",
-      occupantId: archer.unitId,
-    });
-  }
-  if (cavalry) {
-    slots.push({
-      slotId: FORMATION_SLOT_IDS.FRONT_RIGHT,
-      occupantType: "army",
-      occupantId: cavalry.unitId,
-    });
-  }
   if (commanderRoster.activeCommanderIds[0]) {
     slots.push({
       slotId: FORMATION_SLOT_IDS.BACK_CENTER,

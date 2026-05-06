@@ -63,17 +63,16 @@ export function initialiseGame(container) {
           ? "Commander already summoned."
           : "Need 25 Essence to summon.";
     }
-    if (action === "upgrade-infantry") {
-      const infantry = state.armyUnits.find((unit) => unit.id === "infantry");
-      const upgradeCost = Math.round(30 * 1.65 ** (infantry.level - 1));
-      if (state.resources.gold >= upgradeCost) {
-        state.resources.gold -= upgradeCost;
-        infantry.level += 1;
-        infantry.power += 8;
-        infantry.visualProgression = Math.min(1, infantry.visualProgression + 0.05);
-        state.message = `Infantry upgraded to level ${infantry.level}.`;
+    if (action === "raise-unit") {
+      const unit = state.armyUnits.find((candidate) => candidate.id === target.dataset?.unitId);
+      const availableCorpses = state.resources.corpses[unit.corpseType] ?? 0;
+      if (availableCorpses >= unit.corpseCost) {
+        state.resources.corpses[unit.corpseType] = availableCorpses - unit.corpseCost;
+        unit.quantity += 1;
+        unit.visualProgression = Math.min(1, 1 - Math.exp(-(unit.power * unit.quantity) / 900));
+        state.message = `${unit.name} raised.`;
       } else {
-        state.message = `Need ${upgradeCost} Gold to upgrade Infantry.`;
+        state.message = `Need ${unit.corpseCost} ${unit.name} Corpses to raise.`;
       }
     }
 

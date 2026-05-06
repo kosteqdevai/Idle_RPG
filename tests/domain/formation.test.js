@@ -12,7 +12,6 @@ const {
 } = require("../../domain/formation.js");
 
 function createRosterFixture() {
-  const armyRoster = createStartingArmyRoster();
   const commander = createCommander("cavalry-banneret");
   const commanderRoster = createCommanderRoster({
     commanders: [commander],
@@ -20,32 +19,22 @@ function createRosterFixture() {
   });
 
   return {
-    ...armyRoster,
+    ...createStartingArmyRoster({
+      armyUnits: [
+        createArmyUnit("human-peasant", { quantity: 3 }),
+        createArmyUnit("human-soldier", { quantity: 1 }),
+      ],
+    }),
     ...commanderRoster,
   };
 }
 
-describe("formation modifiers and targeting rules", () => {
-  test("creates a default formation from active army composition and commanders", () => {
+describe("dormant formation rules", () => {
+  test("creates a default formation from active commanders only", () => {
     const roster = createRosterFixture();
     const formation = createDefaultFormation(roster);
 
     expect(formation.slots).toEqual([
-      {
-        slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
-        occupantType: "army",
-        occupantId: "infantry",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.BACK_LEFT,
-        occupantType: "army",
-        occupantId: "archer",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.FRONT_RIGHT,
-        occupantType: "army",
-        occupantId: "cavalry",
-      },
       {
         slotId: FORMATION_SLOT_IDS.BACK_CENTER,
         occupantType: "commander",
@@ -55,9 +44,29 @@ describe("formation modifiers and targeting rules", () => {
     expect(validateFormation(formation, roster)).toEqual(formation);
   });
 
-  test("rejects formations that deploy unknown, inactive, duplicate, or invalid occupants", () => {
+  test("tolerates empty formation and validates stale army references by roster only", () => {
     const roster = createRosterFixture();
 
+    expect(validateFormation(createFormation([]), roster)).toEqual({ slots: [] });
+    expect(
+      validateFormation(
+        createFormation([
+          {
+            slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
+            occupantType: "army",
+            occupantId: "human-peasant",
+          },
+        ]),
+        roster,
+      ),
+    ).toMatchObject({
+      slots: [
+        {
+          occupantType: "army",
+          occupantId: "human-peasant",
+        },
+      ],
+    });
     expect(() =>
       validateFormation(
         createFormation([
@@ -69,30 +78,46 @@ describe("formation modifiers and targeting rules", () => {
         ]),
         roster,
       ),
-    ).toThrow(/composition/);
-    expect(() =>
-      validateFormation(
-        createFormation([
-          {
-            slotId: FORMATION_SLOT_IDS.BACK_CENTER,
-            occupantType: "commander",
-            occupantId: "vanguard-captain",
-          },
-        ]),
-        roster,
-      ),
-    ).toThrow(/active/);
+    ).toThrow(/roster/);
+  });
+
+  test("combat input ignores army slots while retaining commander contribution", () => {
+    const roster = createRosterFixture();
+    const input = buildFormationCombatInput(
+      createFormation([
+        {
+          slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
+          occupantType: "army",
+          occupantId: "human-peasant",
+        },
+        {
+          slotId: FORMATION_SLOT_IDS.BACK_CENTER,
+          occupantType: "commander",
+          occupantId: "cavalry-banneret",
+        },
+      ]),
+      roster,
+    );
+
+    expect(input.combatants.map((combatant) => combatant.id)).toEqual([
+      "cavalry-banneret",
+    ]);
+    expect(input.totalCombatPower).toBeGreaterThan(0);
+    expect(input.targetingOrder).toEqual(["cavalry-banneret"]);
+  });
+
+  test("rejects duplicate occupants and bad slots before dormant filtering", () => {
     expect(() =>
       createFormation([
         {
           slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
           occupantType: "army",
-          occupantId: "infantry",
+          occupantId: "human-peasant",
         },
         {
           slotId: FORMATION_SLOT_IDS.FRONT_LEFT,
           occupantType: "army",
-          occupantId: "infantry",
+          occupantId: "human-peasant",
         },
       ]),
     ).toThrow(/twice/);
@@ -101,105 +126,9 @@ describe("formation modifiers and targeting rules", () => {
         {
           slotId: "unknown-slot",
           occupantType: "army",
-          occupantId: "infantry",
+          occupantId: "human-peasant",
         },
       ]),
     ).toThrow(/unknown/);
-  });
-
-  test("applies positional buffs and targeting order to autonomous combat input", () => {
-    const roster = createRosterFixture();
-    const input = buildFormationCombatInput(createDefaultFormation(roster), roster);
-
-    const infantry = input.combatants.find((combatant) => combatant.id === "infantry");
-    const archer = input.combatants.find((combatant) => combatant.id === "archer");
-
-    expect(infantry).toMatchObject({
-      slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
-      row: "front",
-      targetPriority: 0,
-      stats: {
-        attack: 24,
-        defense: 48.6,
-        health: 379.5,
-      },
-    });
-    expect(archer).toMatchObject({
-      slotId: FORMATION_SLOT_IDS.BACK_LEFT,
-      row: "back",
-      lane: "left",
-      flankingBonus: {
-        attackMultiplier: 1.15,
-      },
-      stats: {
-        attack: 38.64,
-        defense: 7.2,
-        health: 128,
-      },
-    });
-    expect(input.targetingOrder[0]).toBe("infantry");
-    expect(input.targetingOrder).toEqual([
-      "infantry",
-      "cavalry",
-      "archer",
-      "cavalry-banneret",
-    ]);
-  });
-
-  test("formation choices measurably change combat power", () => {
-    const roster = createRosterFixture();
-    const protectedFormation = createDefaultFormation(roster);
-    const riskyFormation = createFormation([
-      {
-        slotId: FORMATION_SLOT_IDS.BACK_LEFT,
-        occupantType: "army",
-        occupantId: "infantry",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
-        occupantType: "army",
-        occupantId: "archer",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.BACK_RIGHT,
-        occupantType: "army",
-        occupantId: "cavalry",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.FRONT_LEFT,
-        occupantType: "commander",
-        occupantId: "cavalry-banneret",
-      },
-    ]);
-
-    const protectedInput = buildFormationCombatInput(protectedFormation, roster);
-    const riskyInput = buildFormationCombatInput(riskyFormation, roster);
-
-    expect(riskyInput.totalCombatPower).not.toBe(protectedInput.totalCombatPower);
-    expect(riskyInput.targetingOrder[0]).toBe("archer");
-    expect(protectedInput.targetingOrder[0]).toBe("infantry");
-  });
-
-  test("requires army squads to come from player composition, not merely roster ownership", () => {
-    const roster = {
-      ...createStartingArmyRoster(),
-      armyUnits: [
-        ...createStartingArmyRoster().armyUnits,
-        createArmyUnit("infantry", { id: "reserve-infantry" }),
-      ],
-    };
-
-    expect(() =>
-      validateFormation(
-        createFormation([
-          {
-            slotId: FORMATION_SLOT_IDS.FRONT_LEFT,
-            occupantType: "army",
-            occupantId: "reserve-infantry",
-          },
-        ]),
-        roster,
-      ),
-    ).toThrow(/composition/);
   });
 });

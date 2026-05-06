@@ -1,4 +1,4 @@
-const { createStartingArmyRoster } = require("../../domain/army.js");
+const { createArmyUnit, createStartingArmyRoster } = require("../../domain/army.js");
 const {
   createCommander,
   createCommanderRoster,
@@ -16,7 +16,12 @@ const {
 } = require("../../domain/combat.js");
 
 function createCombatFixture() {
-  const armyRoster = createStartingArmyRoster();
+  const armyRoster = createStartingArmyRoster({
+    armyUnits: [
+      createArmyUnit("human-peasant", { quantity: 3 }),
+      createArmyUnit("human-soldier", { quantity: 2 }),
+    ],
+  });
   const commander = createCommander("vanguard-captain");
   const commanderRoster = createCommanderRoster({
     commanders: [commander],
@@ -55,13 +60,11 @@ describe("autonomous combat engine", () => {
       id: "hero",
       power: expect.any(Number),
     });
+    expect(result.armyPower).toBe(39);
     expect(result.participants.formation.map((unit) => unit.id)).toEqual([
-      "infantry",
-      "archer",
-      "cavalry",
       "vanguard-captain",
     ]);
-    expect(result.targetingOrder[0]).toBe("infantry");
+    expect(result.targetingOrder[0]).toBe("vanguard-captain");
   });
 
   test("produces win/loss results, rewards, and combat logs", () => {
@@ -91,6 +94,10 @@ describe("autonomous combat engine", () => {
     expect(win.rewards.heroExperience).toBeGreaterThan(0);
     expect([0, 1]).toContain(win.rewards.essence);
     expect(win.rewards.realmShards).toBe(0);
+    expect(win.rewards.corpseDrop).toMatchObject({
+      corpseType: expect.stringMatching(/^human-/),
+      quantity: expect.any(Number),
+    });
     expect(win.log.map((entry) => entry.type)).toEqual([
       "combat-started",
       "targeting-order",
@@ -104,6 +111,9 @@ describe("autonomous combat engine", () => {
       essence: 0,
       realmShards: 0,
       heroExperience: expect.any(Number),
+      corpseDrop: expect.objectContaining({
+        corpseType: expect.stringMatching(/^undead-/),
+      }),
     });
     expect(loss.rewards.heroExperience).toBeGreaterThan(0);
     expect(loss.log[2].type).toBe("combat-lost");
@@ -132,38 +142,31 @@ describe("autonomous combat engine", () => {
     });
   });
 
-  test("formation changes alter outcome probability and targeting order", () => {
+  test("army quantity alters outcome probability while formation army slots stay dormant", () => {
     const fixture = createCombatFixture();
     const protectedResult = resolveCombat({
       ...fixture,
       zoneId: "ashen-marches-1",
       seed: "formation-a",
     });
-    const riskyFormation = createFormation([
-      {
-        slotId: FORMATION_SLOT_IDS.BACK_LEFT,
-        occupantType: "army",
-        occupantId: "infantry",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.FRONT_CENTER,
-        occupantType: "army",
-        occupantId: "archer",
-      },
-      {
-        slotId: FORMATION_SLOT_IDS.BACK_RIGHT,
-        occupantType: "army",
-        occupantId: "cavalry",
-      },
+    const strongerRoster = {
+      ...fixture.roster,
+      armyUnits: [
+        createArmyUnit("human-peasant", { quantity: 20 }),
+        createArmyUnit("human-soldier", { quantity: 8 }),
+      ],
+    };
+    const dormantArmyFormation = createFormation([
       {
         slotId: FORMATION_SLOT_IDS.FRONT_LEFT,
-        occupantType: "commander",
-        occupantId: "vanguard-captain",
+        occupantType: "army",
+        occupantId: "human-peasant",
       },
     ]);
     const riskyResult = resolveCombat({
       ...fixture,
-      formation: riskyFormation,
+      roster: strongerRoster,
+      formation: dormantArmyFormation,
       zoneId: "ashen-marches-1",
       seed: "formation-a",
     });
@@ -172,8 +175,7 @@ describe("autonomous combat engine", () => {
     expect(riskyResult.winProbability).not.toBe(
       protectedResult.winProbability,
     );
-    expect(protectedResult.targetingOrder[0]).toBe("infantry");
-    expect(riskyResult.targetingOrder[0]).toBe("archer");
+    expect(riskyResult.participants.formation).toEqual([]);
   });
 
   test("calculates bounded win probability and deterministic rolls", () => {

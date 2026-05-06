@@ -12,6 +12,7 @@ describe("main hub screen state", () => {
         gold: 50,
         essence: 2,
         realmShards: 1,
+        corpses: {},
       },
       roster: {
         hero: {
@@ -47,6 +48,7 @@ describe("main hub screen state", () => {
         gold: 50,
         essence: 2,
         realmShards: 1,
+        corpses: {},
       },
       navigationTargets: [
         SCENE_IDS.ZONE_MAP,

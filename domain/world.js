@@ -208,6 +208,7 @@ function unlockRealm(progression, resources, realmId) {
     gold: resources.gold ?? 0,
     essence: resources.essence ?? 0,
     realmShards: resources.realmShards ?? 0,
+    corpses: structuredClone(resources.corpses ?? {}),
   };
 
   if (!canUnlockRealm(currentProgression, currentResources, realmId)) {

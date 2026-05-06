@@ -44,12 +44,8 @@ describe("placeholder asset and visual progression pipeline", () => {
       roster: {
         ...createStartingArmyRoster(),
         armyUnits: [
-          createArmyUnit("infantry", { level: 5, experience: 242 }),
-          createArmyUnit("archer"),
-        ],
-        armyComposition: [
-          { unitId: "infantry", count: 6 },
-          { unitId: "archer", count: 4 },
+          createArmyUnit("human-peasant", { quantity: 3 }),
+          createArmyUnit("human-soldier"),
         ],
         ...createCommanderRoster({
           commanders: [commander],
@@ -75,8 +71,8 @@ describe("placeholder asset and visual progression pipeline", () => {
       "assets/commanders/icons/vanguard-captain.svg",
     );
     expect(renderData.armyUnits.map((unit) => unit.sprite)).toEqual([
-      "assets/placeholders/army/infantry.png",
-      "assets/placeholders/army/archer.png",
+      "assets/placeholders/army/human-peasant.png",
+      "assets/placeholders/army/human-soldier.png",
     ]);
     expect(renderData.realm.sprite).toBe(
       "assets/placeholders/realms/verdant-kingdom.png",

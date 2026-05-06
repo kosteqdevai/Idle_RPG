@@ -1,4 +1,4 @@
-const { createStartingArmyRoster } = require("../../domain/army.js");
+const { createArmyUnit, createStartingArmyRoster } = require("../../domain/army.js");
 const {
   createCommander,
   createCommanderRoster,
@@ -14,7 +14,12 @@ function createDomainState() {
   const commander = createCommander("vanguard-captain");
   return createGameSession({
     roster: {
-      ...createStartingArmyRoster(),
+      ...createStartingArmyRoster({
+        armyUnits: [
+          createArmyUnit("human-peasant", { quantity: 2 }),
+          createArmyUnit("human-soldier", { quantity: 1 }),
+        ],
+      }),
       ...createCommanderRoster({
         commanders: [commander],
         activeCommanderIds: [commander.id],
@@ -23,16 +28,17 @@ function createDomainState() {
   }).snapshot();
 }
 
-describe("pre-combat formation screen state", () => {
-  test("shows army composition options, active commanders, and current formation", () => {
+describe("dormant pre-combat formation screen state", () => {
+  test("shows read-only auto-deployed army quantities and active commanders", () => {
     const viewModel = createFormationViewModel(createDomainState());
 
+    expect(viewModel.dormant).toBe(true);
+    expect(viewModel.note).toMatch(/auto-deploys/);
+    expect(viewModel.autoDeployedArmyPower).toBe(22);
     expect(viewModel.armyOptions.map((unit) => unit.id)).toEqual([
-      "infantry",
-      "archer",
-      "cavalry",
+      "human-peasant",
+      "human-soldier",
     ]);
-    expect(viewModel.armyOptions.every((unit) => unit.inComposition)).toBe(true);
     expect(viewModel.commanderOptions).toEqual([
       {
         id: "vanguard-captain",
@@ -43,56 +49,26 @@ describe("pre-combat formation screen state", () => {
     ]);
   });
 
-  test("updates army composition through the domain roster validator", () => {
+  test("composition and assignment actions are no-ops while dormant", () => {
     const router = createSceneRouter({
       currentScene: SCENE_IDS.FORMATION,
       domainState: createDomainState(),
     });
     const screen = createFormationScreen({ router });
 
-    expect(
-      screen.setComposition([{ unitId: "infantry", count: 9 }]).composition,
-    ).toEqual([{ unitId: "infantry", count: 9 }]);
-    expect(() =>
-      screen.setComposition([{ unitId: "missing", count: 1 }]),
-    ).toThrow(/exist/);
+    expect(screen.setComposition([{ unitId: "human-peasant", count: 99 }]).dormant).toBe(true);
+    expect(screen.assignSlot("front-center", "army", "human-peasant").dormant).toBe(true);
+    expect(screen.validate().slots).toEqual([]);
+    expect(router.snapshot().domainState.formation.slots).toEqual([]);
   });
 
-  test("assigns units and commanders to slots and validates illegal placements", () => {
+  test("routes to combat without mutating formation", () => {
     const router = createSceneRouter({
       currentScene: SCENE_IDS.FORMATION,
       domainState: createDomainState(),
     });
     const screen = createFormationScreen({ router });
 
-    screen.assignSlot("front-center", "army", "infantry");
-    screen.assignSlot("back-center", "commander", "vanguard-captain");
-
-    expect(screen.validate().slots).toEqual([
-      {
-        slotId: "front-center",
-        occupantType: "army",
-        occupantId: "infantry",
-      },
-      {
-        slotId: "back-center",
-        occupantType: "commander",
-        occupantId: "vanguard-captain",
-      },
-    ]);
-    expect(() => screen.assignSlot("bad-slot", "army", "infantry")).toThrow(
-      /unknown/,
-    );
-  });
-
-  test("passes a valid formation into combat setup", () => {
-    const router = createSceneRouter({
-      currentScene: SCENE_IDS.FORMATION,
-      domainState: createDomainState(),
-    });
-    const screen = createFormationScreen({ router });
-
-    screen.assignSlot("front-center", "army", "infantry");
     const nextState = screen.startCombat("verdant-kingdom-1");
 
     expect(nextState).toMatchObject({
@@ -102,13 +78,7 @@ describe("pre-combat formation screen state", () => {
       },
       domainState: {
         formation: {
-          slots: [
-            {
-              slotId: "front-center",
-              occupantType: "army",
-              occupantId: "infantry",
-            },
-          ],
+          slots: [],
         },
       },
     });

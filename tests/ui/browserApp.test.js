@@ -53,10 +53,11 @@ describe("production browser app interactions", () => {
     expect(container.innerHTML).toContain("Hero Lv 1");
     expect(container.innerHTML).toContain("+16 XP");
     expect(container.innerHTML).toContain("Essence chance");
-    expect(container.innerHTML).toContain("Won Greenwatch Fields");
+    expect(container.innerHTML).toContain("Survived Greenwatch Fields");
+    expect(container.innerHTML).toContain("Human Peasant Corpses");
 
     container.click({ action: "combat-round" });
-    expect(container.innerHTML).toContain("#2 Won Greenwatch Fields");
+    expect(container.innerHTML).toContain("#2 Survived Greenwatch Fields");
     expect(container.innerHTML).toContain("combat-history");
     expect(container.innerHTML).toContain("strike-line");
     expect(container.innerHTML).toContain("32/100 XP");
@@ -92,16 +93,22 @@ describe("production browser app interactions", () => {
     rosterContainer.click({ scene: "main-hub" });
     expect(rosterContainer.innerHTML).toContain("Main Hub");
 
+    rosterContainer.click({ scene: "combat" });
+    expect(rosterContainer.innerHTML).toContain("Human Peasant Corpses");
+
+    rosterContainer.click({ scene: "main-hub" });
     rosterContainer.click({ scene: "army-roster" });
     expect(rosterContainer.innerHTML).toContain("Army Roster");
+    expect(rosterContainer.innerHTML).toContain("Qty 0");
+    expect(rosterContainer.innerHTML).toContain("Corpses 3/1");
 
-    rosterContainer.click({ action: "upgrade-infantry" });
-    expect(rosterContainer.innerHTML).toContain("Infantry upgraded to level 2.");
-    expect(rosterContainer.innerHTML).toContain("Lv 2");
+    rosterContainer.click({ action: "raise-unit", unitId: "human-peasant" });
+    expect(rosterContainer.innerHTML).toContain("Human Peasant raised.");
+    expect(rosterContainer.innerHTML).toContain("Qty 1");
+    expect(rosterContainer.innerHTML).toContain("Corpses 2/1");
 
-    rosterContainer.click({ action: "upgrade-infantry" });
-    expect(rosterContainer.innerHTML).toContain("Need");
-    expect(rosterContainer.innerHTML).toContain("Gold to upgrade Infantry.");
+    rosterContainer.click({ action: "raise-unit", unitId: "human-guard" });
+    expect(rosterContainer.innerHTML).toContain("Need 2 Human Guard Corpses to raise.");
 
     rosterContainer.click({ scene: "main-hub" });
     rosterContainer.click({ scene: "commander-roster" });

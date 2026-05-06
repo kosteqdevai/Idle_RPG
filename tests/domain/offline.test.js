@@ -57,6 +57,7 @@ describe("offline progress engine", () => {
       gold: 233,
       essence: 4,
       realmShards: 7,
+      corpses: {},
     });
     expect(result.summary).toMatchObject({
       lastActiveZoneId: "verdant-kingdom-5",

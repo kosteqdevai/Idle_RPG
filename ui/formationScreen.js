@@ -1,25 +1,23 @@
-const {
-  createFormation,
-  validateFormation,
-} = require("../domain/formation.js");
-const {
-  setArmyComposition,
-} = require("../domain/army.js");
+const { calculateArmyRosterPower } = require("../domain/army.js");
 const { SCENE_IDS } = require("./sceneRouter.js");
 
-function createFormationViewModel(domainState, draftFormation = null) {
+function createFormationViewModel(domainState) {
   if (!domainState) {
     throw new TypeError("domainState is required");
   }
 
   return {
+    dormant: true,
+    note: "Formation is dormant: combat auto-deploys raised army quantities.",
+    autoDeployedArmyPower: calculateArmyRosterPower(domainState.roster),
     armyOptions: domainState.roster.armyUnits.map((unit) => ({
       id: unit.id,
       name: unit.name,
-      role: unit.role,
-      inComposition: domainState.roster.armyComposition.some(
-        (entry) => entry.unitId === unit.id,
-      ),
+      race: unit.race,
+      tier: unit.tier,
+      quantity: unit.quantity,
+      power: unit.power,
+      totalPower: unit.power * unit.quantity,
     })),
     commanderOptions: domainState.roster.commanders.map((commander) => ({
       id: commander.id,
@@ -27,8 +25,7 @@ function createFormationViewModel(domainState, draftFormation = null) {
       role: commander.role,
       active: domainState.roster.activeCommanderIds.includes(commander.id),
     })),
-    composition: domainState.roster.armyComposition,
-    formation: draftFormation ?? domainState.formation,
+    formation: domainState.formation,
   };
 }
 
@@ -37,56 +34,24 @@ function createFormationScreen({ router } = {}) {
     throw new TypeError("router is required");
   }
 
-  let draftFormation = null;
-
   function getDomainState() {
     return router.snapshot().domainState;
   }
 
   return {
     getViewModel() {
-      return createFormationViewModel(getDomainState(), draftFormation);
+      return createFormationViewModel(getDomainState());
     },
-    setComposition(armyComposition) {
-      const domainState = getDomainState();
-      const armyRoster = setArmyComposition(domainState.roster, armyComposition);
-      const nextDomainState = {
-        ...domainState,
-        roster: {
-          ...domainState.roster,
-          armyComposition: armyRoster.armyComposition,
-        },
-      };
-      router.replaceDomainState(nextDomainState);
+    setComposition() {
       return this.getViewModel();
     },
-    assignSlot(slotId, occupantType, occupantId) {
-      const current = draftFormation ?? getDomainState().formation;
-      const remainingSlots = current.slots.filter(
-        (slot) =>
-          slot.slotId !== slotId &&
-          !(
-            slot.occupantType === occupantType &&
-            slot.occupantId === occupantId
-          ),
-      );
-      draftFormation = createFormation([
-        ...remainingSlots,
-        { slotId, occupantType, occupantId },
-      ]);
-
+    assignSlot() {
       return this.getViewModel();
     },
     validate() {
-      return validateFormation(draftFormation ?? getDomainState().formation, getDomainState().roster);
+      return getDomainState().formation;
     },
     startCombat(zoneId) {
-      const formation = this.validate();
-      const domainState = {
-        ...getDomainState(),
-        formation,
-      };
-      router.replaceDomainState(domainState);
       return router.navigate(SCENE_IDS.COMBAT, {
         zoneId,
       });

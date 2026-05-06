@@ -1,4 +1,4 @@
-const { createStartingArmyRoster } = require("../../domain/army.js");
+const { createArmyUnit, createStartingArmyRoster } = require("../../domain/army.js");
 const {
   createCommander,
   createCommanderRoster,
@@ -14,7 +14,12 @@ const {
 function createDomainState() {
   const commander = createCommander("vanguard-captain");
   const roster = {
-    ...createStartingArmyRoster(),
+    ...createStartingArmyRoster({
+      armyUnits: [
+        createArmyUnit("human-peasant", { quantity: 3 }),
+        createArmyUnit("human-soldier", { quantity: 2 }),
+      ],
+    }),
     ...createCommanderRoster({
       commanders: [commander],
       activeCommanderIds: [commander.id],
@@ -53,10 +58,11 @@ describe("combat scene state", () => {
         gold: expect.any(Number),
         essence: expect.any(Number),
         realmShards: 0,
+        corpseDrop: expect.any(Object),
       },
     });
     expect(viewModel.participants.formation.map((unit) => unit.id)).toContain(
-      "infantry",
+      "vanguard-captain",
     );
     expect(viewModel.log.map((entry) => entry.type)).toContain("combat-won");
   });
@@ -74,6 +80,7 @@ describe("combat scene state", () => {
 
     expect(nextState.currentScene).toBe(SCENE_IDS.MAIN_HUB);
     expect(nextState.domainState.resources.gold).toBeGreaterThan(0);
+    expect(Object.values(nextState.domainState.resources.corpses).some(Boolean)).toBe(true);
     expect(nextState.domainState.roster.hero.experience).toBeGreaterThan(
       beforeExperience,
     );

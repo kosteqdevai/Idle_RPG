@@ -1,4 +1,5 @@
 const { COMBAT_BALANCE } = require("../config/combat.js");
+const { calculateArmyRosterPower, getZoneCorpseDrop } = require("./army.js");
 const { createHero } = require("./hero.js");
 const { buildFormationCombatInput } = require("./formation.js");
 const { getZone } = require("./world.js");
@@ -33,7 +34,7 @@ function calculateWinProbability(playerPower, enemyPower) {
   );
 }
 
-function calculateRewards(zone, didWin, essenceRoll) {
+function calculateRewards(zone, didWin, essenceRoll, corpseRoll) {
   const essenceChance =
     COMBAT_BALANCE.essenceDropBaseChance +
     Math.min(0.18, zone.index * 0.015);
@@ -52,6 +53,7 @@ function calculateRewards(zone, didWin, essenceRoll) {
       essence: essenceRoll <= essenceChance ? 1 : 0,
       realmShards: 0,
       heroExperience,
+      corpseDrop: getZoneCorpseDrop(zone, corpseRoll),
     };
   }
 
@@ -63,6 +65,7 @@ function calculateRewards(zone, didWin, essenceRoll) {
     essence: essenceRoll <= essenceChance ? 1 : 0,
     realmShards: zone.shardReward,
     heroExperience,
+    corpseDrop: getZoneCorpseDrop(zone, corpseRoll),
   };
 }
 
@@ -82,8 +85,10 @@ function resolveCombat({
 
   const zone = getZone(zoneId);
   const formationInput = buildFormationCombatInput(formation, roster);
+  const armyPower = calculateArmyRosterPower(roster);
   const playerPower = round(
     hero.power * COMBAT_BALANCE.heroPowerWeight +
+      armyPower +
       formationInput.totalCombatPower * COMBAT_BALANCE.formationPowerWeight,
   );
   const enemyPower = zone.enemyPower;
@@ -94,14 +99,16 @@ function resolveCombat({
   const essenceRoll = deterministicRoll(
     `${seed}:essence:${zoneId}:${playerPower}:${formationInput.targetingOrder.join(",")}`,
   );
+  const corpseRoll = deterministicRoll(`${seed}:corpse:${zoneId}:${playerPower}`);
   const didWin = roll <= winProbability;
-  const rewards = calculateRewards(zone, didWin, essenceRoll);
+  const rewards = calculateRewards(zone, didWin, essenceRoll, corpseRoll);
 
   return {
     zoneId,
     outcome: didWin ? "win" : "loss",
     didWin,
     playerPower,
+    armyPower,
     enemyPower,
     winProbability,
     roll,
@@ -121,6 +128,7 @@ function resolveCombat({
         zoneId,
         enemyPower,
         playerPower,
+        armyPower,
       },
       {
         type: "targeting-order",
@@ -135,6 +143,7 @@ function resolveCombat({
         type: "rewards",
         rewards,
         essenceRoll,
+        corpseRoll,
       },
     ],
   };

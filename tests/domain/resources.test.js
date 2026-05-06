@@ -16,40 +16,55 @@ const {
 } = require("../../domain/resources.js");
 
 describe("resource economy and reward rules", () => {
-  test("creates and adds the three supported resources", () => {
+  test("creates and adds supported resources including typed corpses", () => {
     expect(createResources()).toEqual({
       gold: 0,
       essence: 0,
       realmShards: 0,
+      corpses: {},
     });
     expect(
       addResources(
-        { gold: 5, essence: 1, realmShards: 2 },
-        { gold: 7, essence: 3, realmShards: 4 },
+        { gold: 5, essence: 1, realmShards: 2, corpses: { "orc-peasant-corpse": 1 } },
+        { gold: 7, essence: 3, realmShards: 4, corpses: { "orc-peasant-corpse": 2 } },
       ),
     ).toEqual({
       gold: 12,
       essence: 4,
       realmShards: 6,
+      corpses: { "orc-peasant-corpse": 3 },
     });
   });
 
   test("applies combat rewards with explicit resource sources", () => {
     const result = applyCombatRewards(
-      { gold: 1, essence: 0, realmShards: 0 },
+      { gold: 1, essence: 0, realmShards: 0, corpses: {} },
       "verdant-kingdom-3",
-      { gold: 50, essence: 1, realmShards: 1 },
+      {
+        gold: 50,
+        essence: 1,
+        realmShards: 1,
+        corpseDrop: {
+          corpseType: "human-guard-corpse",
+          unitId: "human-guard",
+          quantity: 5,
+        },
+      },
     );
 
     expect(result.resources).toEqual({
       gold: 51,
       essence: 1,
       realmShards: 1,
+      corpses: {
+        "human-guard-corpse": 5,
+      },
     });
     expect(result.sources).toEqual({
       gold: "combat",
       essence: "rare-combat-drop",
       realmShards: "specific-zone-drop",
+      corpses: "combat-corpse-drop",
     });
   });
 
@@ -74,6 +89,7 @@ describe("resource economy and reward rules", () => {
       gold: 999,
       essence: 0,
       realmShards: 0,
+      corpses: {},
     });
     expect(() =>
       spendCommanderSummonResources({
@@ -92,6 +108,7 @@ describe("resource economy and reward rules", () => {
       gold: 999,
       essence: 0,
       realmShards: 3,
+      corpses: {},
     });
   });
 
@@ -102,6 +119,7 @@ describe("resource economy and reward rules", () => {
       gold: 999,
       essence: 4,
       realmShards: 0,
+      corpses: {},
     });
     expect(() =>
       spendRealmUnlockResources({ gold: 999999, essence: 4, realmShards: 2 }, 3),
@@ -126,6 +144,7 @@ describe("resource economy and reward rules", () => {
       gold: 999,
       essence: 4,
       realmShards: 0,
+      corpses: {},
     });
   });
 
@@ -133,5 +152,8 @@ describe("resource economy and reward rules", () => {
     expect(() => createResources({ gold: -1 })).toThrow(RangeError);
     expect(() => createResources({ essence: 1.5 })).toThrow(RangeError);
     expect(() => addResources({}, { realmShards: -1 })).toThrow(RangeError);
+    expect(() =>
+      createResources({ corpses: { "human-peasant-corpse": -1 } }),
+    ).toThrow(RangeError);
   });
 });

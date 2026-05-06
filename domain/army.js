@@ -1,12 +1,9 @@
 const {
   ARMY_ARCHETYPE_IDS,
-  ARMY_SQUAD_ARCHETYPE_CAP,
   ARMY_UNIT_ARCHETYPES,
-  ARMY_UNIT_STAT_GROWTH,
-  ARMY_POWER_WEIGHTS,
-  ARMY_EXPERIENCE,
-  ARMY_UPGRADE,
-  ARMY_VISUAL_PROGRESSION,
+  REALM_RACES,
+  ZONE_BASE_ENEMY_COUNTS,
+  ZONE_UNIT_DROP_WEIGHTS,
 } = require("../config/army.js");
 
 function clone(value) {
@@ -34,123 +31,55 @@ function getArmyUnitArchetype(archetypeId) {
   return archetype;
 }
 
-function getArmyUnitExperienceForLevel(level) {
-  if (!Number.isInteger(level) || level < 1) {
-    throw new RangeError("level must be a positive integer");
+function getArmyUnitsForRealm(realmId) {
+  const race = REALM_RACES[realmId];
+  if (!race) {
+    throw new RangeError(`unknown realm race for realm id: ${realmId}`);
   }
 
-  if (level === 1) {
+  return ARMY_UNIT_ARCHETYPES.filter((unit) => unit.realmId === realmId);
+}
+
+function calculateArmyUnitVisualProgression(unit) {
+  const quantity = unit.quantity ?? 0;
+  if (quantity === 0) {
     return 0;
   }
 
-  let total = 0;
-  for (let nextLevel = 2; nextLevel <= level; nextLevel += 1) {
-    total += Math.round(
-      ARMY_EXPERIENCE.firstLevelCost *
-        ARMY_EXPERIENCE.growthFactor ** (nextLevel - 2),
-    );
-  }
-
-  return total;
-}
-
-function getArmyUnitLevelForExperience(experience) {
-  assertNonNegativeInteger(experience, "experience");
-
-  let level = 1;
-  while (experience >= getArmyUnitExperienceForLevel(level + 1)) {
-    level += 1;
-  }
-
-  return level;
-}
-
-function calculateArmyUnitStats(archetypeId, level) {
-  const archetype = getArmyUnitArchetype(archetypeId);
-  if (!Number.isInteger(level) || level < 1) {
-    throw new RangeError("level must be a positive integer");
-  }
-
-  const levelOffset = level - 1;
-
-  return {
-    attack: round(
-      archetype.baseStats.attack + ARMY_UNIT_STAT_GROWTH.attack * levelOffset,
-    ),
-    defense: round(
-      archetype.baseStats.defense +
-        ARMY_UNIT_STAT_GROWTH.defense * levelOffset,
-    ),
-    health: round(
-      archetype.baseStats.health + ARMY_UNIT_STAT_GROWTH.health * levelOffset,
-    ),
-    speed: round(
-      archetype.baseStats.speed + ARMY_UNIT_STAT_GROWTH.speed * levelOffset,
-    ),
-  };
-}
-
-function calculateArmyUnitPower(stats) {
-  return round(
-    stats.attack * ARMY_POWER_WEIGHTS.attack +
-      stats.defense * ARMY_POWER_WEIGHTS.defense +
-      stats.health * ARMY_POWER_WEIGHTS.health +
-      stats.speed * ARMY_POWER_WEIGHTS.speed,
-  );
-}
-
-function calculateArmyUnitVisualProgression(archetypeId, power) {
-  const baselinePower =
-    ARMY_VISUAL_PROGRESSION.baselinePowerByArchetype[archetypeId];
-  if (baselinePower === undefined) {
-    throw new RangeError(`unknown army archetype id: ${archetypeId}`);
-  }
-
-  const powerAboveBaseline = Math.max(0, power - baselinePower);
-
-  return round(
-    1 - Math.exp(-powerAboveBaseline / ARMY_VISUAL_PROGRESSION.curvePower),
-  );
+  return round(1 - Math.exp(-(unit.power * quantity) / 900));
 }
 
 function createArmyUnit(archetypeId, overrides = {}) {
   const archetype = getArmyUnitArchetype(archetypeId);
-  const experience = overrides.experience ?? 0;
-  assertNonNegativeInteger(experience, "experience");
+  const quantity = overrides.quantity ?? 0;
+  assertNonNegativeInteger(quantity, "quantity");
 
-  const level = overrides.level ?? getArmyUnitLevelForExperience(experience);
-  if (!Number.isInteger(level) || level < 1) {
-    throw new RangeError("level must be a positive integer");
-  }
-
-  const stats = overrides.stats ?? calculateArmyUnitStats(archetypeId, level);
-  const power = calculateArmyUnitPower(stats);
-
-  return {
+  const unit = {
     id: overrides.id ?? archetype.id,
     archetypeId: archetype.id,
     name: archetype.name,
-    role: archetype.role,
-    level,
-    experience,
-    stats,
-    power,
-    visualProgression: calculateArmyUnitVisualProgression(archetype.id, power),
+    race: archetype.race,
+    tier: archetype.tier,
+    tierKey: archetype.tierKey,
+    power: archetype.power,
+    quantity,
+    corpseType: archetype.corpseType,
+    corpseCost: archetype.corpseCost,
+  };
+
+  return {
+    ...unit,
+    visualProgression: calculateArmyUnitVisualProgression(unit),
   };
 }
 
-function createStartingArmyRoster() {
+function createStartingArmyRoster(overrides = {}) {
   return createArmyRoster({
-    armyUnits: [
-      createArmyUnit(ARMY_ARCHETYPE_IDS.INFANTRY),
-      createArmyUnit(ARMY_ARCHETYPE_IDS.ARCHER),
-      createArmyUnit(ARMY_ARCHETYPE_IDS.CAVALRY),
-    ],
-    armyComposition: [
-      { unitId: ARMY_ARCHETYPE_IDS.INFANTRY, count: 6 },
-      { unitId: ARMY_ARCHETYPE_IDS.ARCHER, count: 4 },
-      { unitId: ARMY_ARCHETYPE_IDS.CAVALRY, count: 2 },
-    ],
+    armyUnits:
+      overrides.armyUnits ??
+      ARMY_UNIT_ARCHETYPES.map((unit) => createArmyUnit(unit.id)),
+    armyComposition: overrides.armyComposition ?? [],
+    activeFormationUnitIds: overrides.activeFormationUnitIds ?? [],
   });
 }
 
@@ -159,24 +88,19 @@ function createArmyRoster(overrides = {}) {
   const armyComposition = clone(overrides.armyComposition ?? []);
   const activeFormationUnitIds = clone(overrides.activeFormationUnitIds ?? []);
 
-  const unitIds = new Set(armyUnits.map((unit) => unit.id));
-  if (unitIds.size !== armyUnits.length) {
+  const normalizedUnits = armyUnits.map((unit) =>
+    createArmyUnit(unit.archetypeId ?? unit.id, unit),
+  );
+  const unitIds = new Set(normalizedUnits.map((unit) => unit.id));
+  if (unitIds.size !== normalizedUnits.length) {
     throw new RangeError("army roster cannot contain duplicate units");
   }
 
-  const compositionIds = new Set();
   for (const entry of armyComposition) {
     if (!unitIds.has(entry.unitId)) {
       throw new RangeError("army composition units must exist in roster");
     }
-    if (!Number.isInteger(entry.count) || entry.count <= 0) {
-      throw new RangeError("army composition counts must be positive integers");
-    }
-    compositionIds.add(entry.unitId);
-  }
-
-  if (compositionIds.size > ARMY_SQUAD_ARCHETYPE_CAP) {
-    throw new RangeError("army squad archetype cap exceeded");
+    assertNonNegativeInteger(entry.count, "army composition count");
   }
 
   for (const unitId of activeFormationUnitIds) {
@@ -186,7 +110,7 @@ function createArmyRoster(overrides = {}) {
   }
 
   return {
-    armyUnits,
+    armyUnits: normalizedUnits,
     armyComposition,
     activeFormationUnitIds,
   };
@@ -206,43 +130,38 @@ function setActiveFormationUnitIds(roster, activeFormationUnitIds) {
   });
 }
 
+function calculateArmyUnitPower(unit) {
+  return unit.power;
+}
+
+function calculateArmyRosterPower(roster) {
+  return round(
+    createArmyRoster(roster).armyUnits.reduce(
+      (total, unit) => total + unit.power * unit.quantity,
+      0,
+    ),
+  );
+}
+
 function calculateArmySquadStats(roster) {
   const currentRoster = createArmyRoster(roster);
-  const stats = {
-    attack: 0,
-    defense: 0,
-    health: 0,
-    speed: 0,
-    power: 0,
-    unitCount: 0,
-    visualProgression: 0,
-  };
-
-  for (const entry of currentRoster.armyComposition) {
-    const unit = currentRoster.armyUnits.find(
-      (armyUnit) => armyUnit.id === entry.unitId,
-    );
-    stats.attack += unit.stats.attack * entry.count;
-    stats.defense += unit.stats.defense * entry.count;
-    stats.health += unit.stats.health * entry.count;
-    stats.speed += unit.stats.speed * entry.count;
-    stats.power += unit.power * entry.count;
-    stats.visualProgression += unit.visualProgression * entry.count;
-    stats.unitCount += entry.count;
-  }
-
-  if (stats.unitCount === 0) {
-    return stats;
-  }
+  const totalQuantity = currentRoster.armyUnits.reduce(
+    (total, unit) => total + unit.quantity,
+    0,
+  );
 
   return {
-    attack: round(stats.attack),
-    defense: round(stats.defense),
-    health: round(stats.health),
-    speed: round(stats.speed / stats.unitCount),
-    power: round(stats.power),
-    unitCount: stats.unitCount,
-    visualProgression: round(stats.visualProgression / stats.unitCount),
+    power: calculateArmyRosterPower(currentRoster),
+    unitCount: totalQuantity,
+    visualProgression:
+      totalQuantity === 0
+        ? 0
+        : round(
+            currentRoster.armyUnits.reduce(
+              (total, unit) => total + unit.visualProgression * unit.quantity,
+              0,
+            ) / totalQuantity,
+          ),
   };
 }
 
@@ -262,68 +181,101 @@ function deleteArmyUnit(roster, unitId) {
   });
 }
 
-function getArmyUnitUpgradeCost(unit) {
-  return Math.round(
-    ARMY_UPGRADE.goldBaseCost * ARMY_UPGRADE.goldGrowthFactor ** (unit.level - 1),
-  );
+function createCorpseResources(resources = {}) {
+  return clone(resources.corpses ?? {});
 }
 
-function upgradeArmyUnit(roster, resources, unitId) {
+function raiseArmyUnit(roster, resources, unitId) {
   const currentRoster = createArmyRoster(roster);
-  const currentResources = {
-    gold: resources.gold ?? 0,
-    essence: resources.essence ?? 0,
-    realmShards: resources.realmShards ?? 0,
-  };
   const unit = currentRoster.armyUnits.find((armyUnit) => armyUnit.id === unitId);
 
   if (!unit) {
     throw new RangeError("army unit must exist in roster");
   }
 
-  const goldCost = getArmyUnitUpgradeCost(unit);
-  if (currentResources.gold < goldCost) {
-    throw new RangeError("not enough Gold to upgrade army unit");
+  const corpseCost = unit.corpseCost;
+  const corpses = createCorpseResources(resources);
+  const availableCorpses = corpses[unit.corpseType] ?? 0;
+  if (availableCorpses < corpseCost) {
+    throw new RangeError(`not enough ${unit.name} corpses to raise unit`);
   }
 
-  const upgradedUnit = createArmyUnit(unit.archetypeId, {
-    id: unit.id,
-    experience: unit.experience + ARMY_UPGRADE.experiencePerUpgrade,
+  const raisedUnit = createArmyUnit(unit.archetypeId, {
+    ...unit,
+    quantity: unit.quantity + 1,
   });
+  const nextCorpses = {
+    ...corpses,
+    [unit.corpseType]: availableCorpses - corpseCost,
+  };
 
   return {
     roster: createArmyRoster({
       ...currentRoster,
       armyUnits: currentRoster.armyUnits.map((armyUnit) =>
-        armyUnit.id === unitId ? upgradedUnit : armyUnit,
+        armyUnit.id === unitId ? raisedUnit : armyUnit,
       ),
     }),
     resources: {
-      ...currentResources,
-      gold: currentResources.gold - goldCost,
+      gold: resources.gold ?? 0,
+      essence: resources.essence ?? 0,
+      realmShards: resources.realmShards ?? 0,
+      corpses: nextCorpses,
     },
-    upgradedUnit,
-    goldCost,
+    raisedUnit,
+    corpseCost,
+  };
+}
+
+function chooseWeightedUnit(units, weights, roll) {
+  const totalWeight = weights.reduce((total, weight) => total + weight, 0);
+  let cursor = roll * totalWeight;
+
+  for (let index = 0; index < units.length; index += 1) {
+    cursor -= weights[index];
+    if (cursor <= 0 && weights[index] > 0) {
+      return units[index];
+    }
+  }
+
+  return units.findLast((_, index) => weights[index] > 0);
+}
+
+function getZoneCorpseDrop(zone, roll) {
+  const units = getArmyUnitsForRealm(zone.realmId);
+  const weights = ZONE_UNIT_DROP_WEIGHTS[zone.index];
+  const baseCount = ZONE_BASE_ENEMY_COUNTS[zone.index];
+  if (!weights || !baseCount) {
+    throw new RangeError("zone corpse drops require a designed zone index 1-5");
+  }
+
+  const unit = chooseWeightedUnit(units, weights, roll);
+  const quantity = Math.max(1, baseCount - Math.floor((unit.tier - 1) / 2));
+
+  return {
+    corpseType: unit.corpseType,
+    unitId: unit.id,
+    unitName: unit.name,
+    quantity,
   };
 }
 
 module.exports = {
   ARMY_ARCHETYPE_IDS,
-  ARMY_SQUAD_ARCHETYPE_CAP,
   ARMY_UNIT_ARCHETYPES,
+  REALM_RACES,
   createArmyUnit,
   createArmyRoster,
   createStartingArmyRoster,
   setArmyComposition,
   setActiveFormationUnitIds,
   calculateArmySquadStats,
-  calculateArmyUnitStats,
   calculateArmyUnitPower,
+  calculateArmyRosterPower,
   calculateArmyUnitVisualProgression,
   deleteArmyUnit,
-  getArmyUnitUpgradeCost,
-  upgradeArmyUnit,
+  raiseArmyUnit,
   getArmyUnitArchetype,
-  getArmyUnitExperienceForLevel,
-  getArmyUnitLevelForExperience,
+  getArmyUnitsForRealm,
+  getZoneCorpseDrop,
 };

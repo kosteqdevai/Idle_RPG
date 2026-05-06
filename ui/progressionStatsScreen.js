@@ -25,9 +25,11 @@ function createProgressionStatsViewModel(domainState) {
     armyUnits: domainState.roster.armyUnits.map((unit) => ({
       id: unit.id,
       name: unit.name,
-      level: unit.level,
+      race: unit.race,
+      tier: unit.tier,
       power: unit.power,
-      role: unit.role,
+      quantity: unit.quantity,
+      totalPower: unit.power * unit.quantity,
       visualProgression: unit.visualProgression,
     })),
     aggregate: {
@@ -36,7 +38,7 @@ function createProgressionStatsViewModel(domainState) {
         0,
       ),
       totalArmyPower: domainState.roster.armyUnits.reduce(
-        (total, unit) => total + unit.power,
+        (total, unit) => total + unit.power * unit.quantity,
         0,
       ),
     },

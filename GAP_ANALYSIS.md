@@ -221,3 +221,11 @@ blocked_by: GAP-007, GAP-008, GAP-016, GAP-025
 closes_when: Combat rewards include hero XP, finishing combat applies that XP to hero progression, and every production browser combat has a visible small independent chance to drop Essence while still awarding Gold.
 escalate_if: XP rewards require changing closed hero progression rules or introducing active combat input.
 do_not: do not add quests, premium currency, active abilities, or new build tooling.
+
+## GAP-027 — Corpse-based army roster redesign
+phase: 3
+status: closed
+blocked_by: GAP-007, GAP-008, GAP-016, GAP-026
+closes_when: New games initialize all realm army unit types at quantity 0, combat rewards typed corpses from weighted realm/zone drops, army power is calculated from raised quantities times unit Power, raising units spends matching corpses, and formation is read-only/dormant in the browser.
+escalate_if: corpse-based army growth requires adding active combat controls, quests, procedural zones, or build tooling.
+do_not: do not restore Gold army upgrades, starter army quantities, multi-stat army units, manual formation editing, or active combat abilities.

@@ -14,15 +14,12 @@ function createDomainState() {
   });
   return createGameSession({
     roster: {
-      ...createStartingArmyRoster(),
-      armyUnits: [
-        createArmyUnit("infantry", { level: 4, experience: 172 }),
-        createArmyUnit("archer"),
-      ],
-      armyComposition: [
-        { unitId: "infantry", count: 6 },
-        { unitId: "archer", count: 4 },
-      ],
+      ...createStartingArmyRoster({
+        armyUnits: [
+          createArmyUnit("human-peasant", { quantity: 3 }),
+          createArmyUnit("human-soldier", { quantity: 2 }),
+        ],
+      }),
       ...createCommanderRoster({
         commanders: [commander],
         activeCommanderIds: [commander.id],
@@ -35,7 +32,7 @@ function createDomainState() {
 }
 
 describe("progression and stats screen state", () => {
-  test("displays hero, commander, and army growth data with visual progression", () => {
+  test("displays hero, commander, and corpse-raised army growth data", () => {
     const viewModel = createProgressionStatsViewModel(createDomainState());
 
     expect(viewModel.hero).toMatchObject({
@@ -44,11 +41,6 @@ describe("progression and stats screen state", () => {
       experience: 235,
       power: expect.any(Number),
       visualProgression: expect.any(Number),
-      stats: {
-        attack: 16,
-        defense: 10,
-        health: 136,
-      },
     });
     expect(viewModel.commanders).toEqual([
       expect.objectContaining({
@@ -59,14 +51,14 @@ describe("progression and stats screen state", () => {
     ]);
     expect(viewModel.armyUnits).toEqual([
       expect.objectContaining({
-        id: "infantry",
-        level: 4,
-        visualProgression: expect.any(Number),
+        id: "human-peasant",
+        quantity: 3,
+        totalPower: 15,
       }),
       expect.objectContaining({
-        id: "archer",
-        level: 1,
-        visualProgression: 0,
+        id: "human-soldier",
+        quantity: 2,
+        totalPower: 24,
       }),
     ]);
   });
@@ -84,7 +76,7 @@ describe("progression and stats screen state", () => {
     const viewModel = createProgressionStatsViewModel(createDomainState());
 
     expect(viewModel.aggregate.totalCommanderPower).toBeGreaterThan(0);
-    expect(viewModel.aggregate.totalArmyPower).toBeGreaterThan(0);
+    expect(viewModel.aggregate.totalArmyPower).toBe(39);
   });
 
   test("routes back to hub and requires router/domain state", () => {
