@@ -69,13 +69,18 @@ describe("combat scene state", () => {
     const screen = createCombatScreen({ router, seed: "combat-ui" });
 
     screen.start("verdant-kingdom-1");
+    const beforeExperience = router.snapshot().domainState.roster.hero.experience;
     const nextState = screen.finishToHub();
 
     expect(nextState.currentScene).toBe(SCENE_IDS.MAIN_HUB);
     expect(nextState.domainState.resources.gold).toBeGreaterThan(0);
+    expect(nextState.domainState.roster.hero.experience).toBeGreaterThan(
+      beforeExperience,
+    );
     expect(nextState.domainState.progression.completedZoneIds).toContain(
       "verdant-kingdom-1",
     );
+    expect(nextState.sceneParams.combatSummary.rewards.heroExperience).toBeGreaterThan(0);
     expect(nextState.sceneParams.combatSummary.activeInputEnabled).toBe(false);
   });
 

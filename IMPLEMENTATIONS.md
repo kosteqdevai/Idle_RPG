@@ -25,6 +25,42 @@ Implementation inferred from domain/session.js and its mirrored test file.
 ---
 ### CHANGELOG
 
+## GAP-026 — Combat XP and Essence drops
+closed_on: 2026-05-05
+
+### What was built
+- Added `heroExperience` to domain combat rewards with win/loss scaling from combat balance constants.
+- Split Essence drops onto an independent deterministic roll so Essence can drop on any combat, including losses.
+- Updated the combat scene finish flow to apply awarded hero XP through `awardHeroExperience`, preserving existing hero progression rules.
+- Updated the production browser combat loop to award XP, update hero level/stats, display XP progress, and show rare Essence drops in combat summaries/history.
+
+### Files created
+none
+
+### Files modified
+config/combat.js — added XP reward balance constants
+domain/combat.js — combat rewards now include hero XP and independent Essence roll data
+ui/combatScreen.js — finishing combat now applies hero XP to domain state
+ui/browser/state.mjs — browser hero state now tracks experience
+ui/browser/combatScreen.mjs — browser combat now awards/displays XP and rare Essence drops
+ui/browser/mainHubScreen.mjs — hub shows current hero XP
+ui/browser/progressionStatsScreen.mjs — progression screen shows hero level and XP
+index.html — refreshed module query and widened combat reward summary layout
+tests/domain/combat.test.js — covered XP rewards and Essence drops on losses
+tests/ui/combatScreen.test.js — covered XP application after finishing combat
+tests/ui/browserApp.test.js — covered browser XP gain, level-up, and visible Essence drop
+tests/entryHtml.test.js — covered updated combat summary layout
+GAP_ANALYSIS.md — added and closed the combat XP/Essence gap
+
+### Test summary
+1 test added and 4 tests extended — coverage proves combat XP exists, XP mutates hero progression on finish, browser battles visibly level the hero, and Essence can drop independently of win/loss.
+
+### Implementation notes
+Domain XP uses the existing hero progression function instead of adding a separate leveling path. Essence remains a normal resource reward, while `heroExperience` is intentionally ignored by `applyCombatRewards` and applied by combat scene state so currencies and hero growth stay separate.
+
+---
+### CHANGELOG
+
 ## GAP-002 — Hero entity and growth model
 closed_on: 2026-05-05
 
@@ -696,3 +732,32 @@ SVG assets keep the pixel-art direction inspectable, tiny, and browser-loadable 
 - index.html now imports the browser app with a version query so a normal refresh loads the latest ES module graph.
 - ui/browser/app.mjs now imports the commander roster module with the same version query so stale roster markup cannot hide the icon grid.
 - tests/entryHtml.test.js now accepts vanilla ES module imports with an optional cache-busting query while still rejecting bundled entry points.
+
+## GAP-025 — Combat browser polish fixes
+closed_on: 2026-05-05
+
+### What was built
+- Reset the production browser seed hero to level 1 with matching level 1 stats and visual progression.
+- Reworked `renderCombatScreen` to render an animated hero-versus-enemy arena, strike trail, last-round summary, and side-mounted prior combat tracker.
+- Changed browser combat log entries from display strings to structured round summaries so repeated combats can be tracked without resizing the main arena.
+- Added stable combat layout CSS with fixed arena/history dimensions, scrollable prior results, mobile stacking, and cache-busted entry import.
+
+### Files created
+none
+
+### Files modified
+ui/browser/state.mjs — browser initial state now starts the hero at level 1 and tracks combat round numbers
+ui/browser/combatScreen.mjs — combat rendering now uses an arena, animation hooks, summary values, and side history
+index.html — added combat presentation styles and refreshed the browser app module version query
+tests/ui/browserApp.test.js — covered level 1 hero startup and visible combat arena/history markup after repeated rounds
+tests/entryHtml.test.js — covered combat layout CSS for stable arena and side tracker presentation
+GAP_ANALYSIS.md — added and closed the combat polish fix gap
+
+### Test summary
+2 tests extended/added — browser interaction coverage now asserts level 1 startup and combat tracker markup; entry HTML coverage now asserts stable combat layout and animation CSS.
+
+### Implementation notes
+The domain hero already starts at level 1, so the fix stayed in the vanilla browser seed data and rendering layer. The combat tracker is intentionally scrollable and separate from the arena so additional results do not push the core interface around.
+
+---
+### CHANGELOG

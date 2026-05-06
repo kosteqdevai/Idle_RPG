@@ -12,34 +12,43 @@ export const scenes = Object.freeze({
 
 export function createInitialBrowserState() {
   return {
-  currentScene: scenes.title,
-  message: "Ready",
-  resources: { gold: 30, essence: 25, realmShards: 0 },
-  hero: { level: 4, attack: 19, defense: 12, health: 154, power: 93.72, visualProgression: 0.047 },
-  realm: { id: "verdant-kingdom", name: "Verdant Kingdom" },
-  zone: { id: "verdant-kingdom-1", name: "Greenwatch Fields", enemyPower: 45 },
-  zones: [
-    { id: "verdant-kingdom-1", name: "Greenwatch Fields", status: "current" },
-    { id: "verdant-kingdom-2", name: "Mossgate Ford", status: "locked" },
-    { id: "verdant-kingdom-3", name: "Briarwall Outpost", status: "locked" },
-  ],
-  commanders: [],
-  armyUnits: [
-    { id: "infantry", name: "Infantry Squad", level: 1, power: 26.7, visualProgression: 0, active: true },
-    { id: "archer", name: "Archer Squad", level: 1, power: 24.79, visualProgression: 0, active: false },
-    { id: "cavalry", name: "Cavalry Squad", level: 1, power: 31.18, visualProgression: 0, active: false },
-  ],
-  formation: [
-    { slot: "front-center", unitId: "infantry" },
-    { slot: "back-left", unitId: "archer" },
-    { slot: "front-right", unitId: "cavalry" },
-  ],
-  offlineSummary: {
-    elapsedSeconds: 7200,
-    rewards: { gold: 23, essence: 0, realmShards: 0 },
-    resolvedCombat: false,
-  },
-  combatLog: [],
+    currentScene: scenes.title,
+    message: "Ready",
+    resources: { gold: 30, essence: 25, realmShards: 0 },
+    hero: {
+      level: 1,
+      experience: 0,
+      attack: 10,
+      defense: 6,
+      health: 100,
+      power: 52.2,
+      visualProgression: 0,
+    },
+    realm: { id: "verdant-kingdom", name: "Verdant Kingdom" },
+    zone: { id: "verdant-kingdom-1", name: "Greenwatch Fields", enemyPower: 45 },
+    zones: [
+      { id: "verdant-kingdom-1", name: "Greenwatch Fields", status: "current" },
+      { id: "verdant-kingdom-2", name: "Mossgate Ford", status: "locked" },
+      { id: "verdant-kingdom-3", name: "Briarwall Outpost", status: "locked" },
+    ],
+    commanders: [],
+    armyUnits: [
+      { id: "infantry", name: "Infantry Squad", level: 1, power: 26.7, visualProgression: 0, active: true },
+      { id: "archer", name: "Archer Squad", level: 1, power: 24.79, visualProgression: 0, active: false },
+      { id: "cavalry", name: "Cavalry Squad", level: 1, power: 31.18, visualProgression: 0, active: false },
+    ],
+    formation: [
+      { slot: "front-center", unitId: "infantry" },
+      { slot: "back-left", unitId: "archer" },
+      { slot: "front-right", unitId: "cavalry" },
+    ],
+    offlineSummary: {
+      elapsedSeconds: 7200,
+      rewards: { gold: 23, essence: 0, realmShards: 0 },
+      resolvedCombat: false,
+    },
+    combatLog: [],
+    combatRound: 0,
   };
 }
 

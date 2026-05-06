@@ -5,7 +5,8 @@ export function renderProgressionStatsScreen() {
 
   return panel(
     "Progression",
-    `<p>Hero visual progression: ${progress}%</p>
+    `<p>Hero level ${state.hero.level} - ${state.hero.experience} XP</p>
+     <p>Hero visual progression: ${progress}%</p>
      <progress max="1" value="${state.hero.visualProgression}"></progress>
      <p>Continuous values drive scale, glow, particles, and overlays.</p>
      <div class="actions">${button("Hub", scenes.hub)}</div>`,

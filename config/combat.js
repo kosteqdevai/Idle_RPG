@@ -5,6 +5,8 @@ const COMBAT_BALANCE = Object.freeze({
   maximumWinProbability: 0.95,
   baseGoldMultiplier: 0.55,
   essenceDropBaseChance: 0.12,
+  heroExperienceMultiplier: 0.35,
+  lossExperienceMultiplier: 0.45,
 });
 
 module.exports = {

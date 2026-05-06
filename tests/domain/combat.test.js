@@ -88,6 +88,8 @@ describe("autonomous combat engine", () => {
 
     expect(win.outcome).toBe("win");
     expect(win.rewards.gold).toBeGreaterThan(0);
+    expect(win.rewards.heroExperience).toBeGreaterThan(0);
+    expect([0, 1]).toContain(win.rewards.essence);
     expect(win.rewards.realmShards).toBe(0);
     expect(win.log.map((entry) => entry.type)).toEqual([
       "combat-started",
@@ -101,8 +103,33 @@ describe("autonomous combat engine", () => {
       gold: expect.any(Number),
       essence: 0,
       realmShards: 0,
+      heroExperience: expect.any(Number),
     });
+    expect(loss.rewards.heroExperience).toBeGreaterThan(0);
     expect(loss.log[2].type).toBe("combat-lost");
+  });
+
+  test("Essence rolls independently and can drop even when combat is lost", () => {
+    const loss = resolveCombat({
+      hero: createHero(),
+      roster: {
+        armyUnits: [],
+        armyComposition: [],
+        activeFormationUnitIds: [],
+        commanders: [],
+        activeCommanderIds: [],
+      },
+      formation: createFormation([]),
+      zoneId: "frostbound-keep-5",
+      seed: "loss-4",
+    });
+
+    expect(loss.outcome).toBe("loss");
+    expect(loss.rewards.essence).toBe(1);
+    expect(loss.log[3]).toMatchObject({
+      type: "rewards",
+      essenceRoll: expect.any(Number),
+    });
   });
 
   test("formation changes alter outcome probability and targeting order", () => {

@@ -205,3 +205,19 @@ blocked_by: GAP-021, GAP-017, DL-003
 closes_when: The repo contains unique pixel-art commander icons and three progression sprite files for every commander in config/commanders.js, the asset manifest resolves those files, and the commander roster surfaces the art without adding a build step.
 escalate_if: commander art requires changing the resolved unique-sprite decision or replacing continuous visual progression with hard tier logic in domain state.
 do_not: do not add a bundler, Phaser rendering assertions, commander deletion, Gold summoning costs, or non-pixel-art production assets.
+
+## GAP-025 — Combat browser polish fixes
+phase: 3
+status: closed
+blocked_by: GAP-ENTRY, GAP-023
+closes_when: The production browser starts the hero at level 1, combat renders a visible animated hero-versus-enemy arena, and prior combat results stay in a side tracker with a stable main combat layout after repeated rounds.
+escalate_if: stabilizing combat presentation requires changing closed domain combat outputs or adding a bundler.
+do_not: do not add active combat controls, Phaser, webpack, vite, parcel, or production art.
+
+## GAP-026 — Combat XP and Essence drops
+phase: 3
+status: closed
+blocked_by: GAP-007, GAP-008, GAP-016, GAP-025
+closes_when: Combat rewards include hero XP, finishing combat applies that XP to hero progression, and every production browser combat has a visible small independent chance to drop Essence while still awarding Gold.
+escalate_if: XP rewards require changing closed hero progression rules or introducing active combat input.
+do_not: do not add quests, premium currency, active abilities, or new build tooling.

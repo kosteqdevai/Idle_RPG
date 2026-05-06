@@ -33,26 +33,36 @@ function calculateWinProbability(playerPower, enemyPower) {
   );
 }
 
-function calculateRewards(zone, didWin, roll) {
-  if (!didWin) {
-    return {
-      gold: Math.max(1, Math.floor(zone.enemyPower * 0.08)),
-      essence: 0,
-      realmShards: 0,
-    };
-  }
-
+function calculateRewards(zone, didWin, essenceRoll) {
   const essenceChance =
     COMBAT_BALANCE.essenceDropBaseChance +
     Math.min(0.18, zone.index * 0.015);
+  const heroExperience = Math.max(
+    1,
+    Math.round(
+      zone.enemyPower *
+        COMBAT_BALANCE.heroExperienceMultiplier *
+        (didWin ? 1 : COMBAT_BALANCE.lossExperienceMultiplier),
+    ),
+  );
+
+  if (!didWin) {
+    return {
+      gold: Math.max(1, Math.floor(zone.enemyPower * 0.08)),
+      essence: essenceRoll <= essenceChance ? 1 : 0,
+      realmShards: 0,
+      heroExperience,
+    };
+  }
 
   return {
     gold: Math.max(
       1,
       Math.round(zone.enemyPower * COMBAT_BALANCE.baseGoldMultiplier),
     ),
-    essence: roll <= essenceChance ? 1 : 0,
+    essence: essenceRoll <= essenceChance ? 1 : 0,
     realmShards: zone.shardReward,
+    heroExperience,
   };
 }
 
@@ -81,8 +91,11 @@ function resolveCombat({
   const roll = deterministicRoll(
     `${seed}:${zoneId}:${playerPower}:${formationInput.targetingOrder.join(",")}`,
   );
+  const essenceRoll = deterministicRoll(
+    `${seed}:essence:${zoneId}:${playerPower}:${formationInput.targetingOrder.join(",")}`,
+  );
   const didWin = roll <= winProbability;
-  const rewards = calculateRewards(zone, didWin, roll);
+  const rewards = calculateRewards(zone, didWin, essenceRoll);
 
   return {
     zoneId,
@@ -121,6 +134,7 @@ function resolveCombat({
       {
         type: "rewards",
         rewards,
+        essenceRoll,
       },
     ],
   };

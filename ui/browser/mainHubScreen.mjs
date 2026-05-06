@@ -5,6 +5,7 @@ export function renderMainHubScreen() {
     "Main Hub",
     `<div class="stats">
        <span>Hero Lv ${state.hero.level}</span>
+       <span>Hero XP ${state.hero.experience}</span>
        <span>${state.realm.name}</span>
        <span>${state.zone.name}</span>
        <span>Gold ${state.resources.gold}</span>

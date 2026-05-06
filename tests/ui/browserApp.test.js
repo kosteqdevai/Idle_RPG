@@ -35,6 +35,9 @@ describe("production browser app interactions", () => {
 
     container.click({ scene: "main-hub" });
     expect(container.innerHTML).toContain("Main Hub");
+    expect(container.innerHTML).toContain("Hero Lv 1");
+    expect(container.innerHTML).toContain("Hero XP 0");
+    expect(container.innerHTML).not.toContain("Hero Lv 4");
 
     container.click({ scene: "zone-map" });
     expect(container.innerHTML).toContain("Zone Map");
@@ -44,10 +47,28 @@ describe("production browser app interactions", () => {
 
     container.click({ scene: "combat" });
     expect(container.innerHTML).toContain("Combat");
+    expect(container.innerHTML).toContain("combat-layout");
+    expect(container.innerHTML).toContain("Autonomous combat visualization");
+    expect(container.innerHTML).toContain("Prior Combats");
+    expect(container.innerHTML).toContain("Hero Lv 1");
+    expect(container.innerHTML).toContain("+16 XP");
+    expect(container.innerHTML).toContain("Essence chance");
     expect(container.innerHTML).toContain("Won Greenwatch Fields");
 
     container.click({ action: "combat-round" });
-    expect(container.innerHTML.match(/Won Greenwatch Fields/g)).toHaveLength(2);
+    expect(container.innerHTML).toContain("#2 Won Greenwatch Fields");
+    expect(container.innerHTML).toContain("combat-history");
+    expect(container.innerHTML).toContain("strike-line");
+    expect(container.innerHTML).toContain("32/100 XP");
+
+    container.click({ action: "combat-round" });
+    container.click({ action: "combat-round" });
+    expect(container.innerHTML).toContain("+1 Essence");
+
+    container.click({ action: "combat-round" });
+    container.click({ action: "combat-round" });
+    container.click({ action: "combat-round" });
+    expect(container.innerHTML).toContain("Hero Lv 2");
 
     container.click({ scene: "zone-map" });
     expect(container.innerHTML).toContain("Zone Map");

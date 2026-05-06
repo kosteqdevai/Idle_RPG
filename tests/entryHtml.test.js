@@ -51,4 +51,13 @@ describe("production browser entry point", () => {
       expect(fs.existsSync(path.join(rootDir, "ui/browser", moduleName))).toBe(true);
     }
   });
+
+  test("combat presentation has stable arena and side history styles", () => {
+    expect(html).toContain(".combat-layout");
+    expect(html).toContain("grid-template-columns: minmax(0, 1fr) minmax(220px, 280px)");
+    expect(html).toContain("grid-template-columns: auto 1fr auto 1fr auto 1fr");
+    expect(html).toContain(".combat-history");
+    expect(html).toContain("max-height: 242px");
+    expect(html).toContain("@keyframes strike-travel");
+  });
 });
